@@ -1,8 +1,13 @@
 # Silent Bus - Home Assistant Integration
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-[![GitHub Release](https://img.shields.io/github/release/ziv-daniel/Silent-bus-integration.svg)](https://github.com/ziv-daniel/Silent-bus-integration/releases)
-[![License](https://img.shields.io/github/license/ziv-daniel/Silent-bus-integration.svg)](LICENSE)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/hacs/integration)
+[![GitHub Release](https://img.shields.io/github/release/ziv-daniel/Silent-bus-integration.svg?style=for-the-badge)](https://github.com/ziv-daniel/Silent-bus-integration/releases)
+[![License](https://img.shields.io/github/license/ziv-daniel/Silent-bus-integration.svg?style=for-the-badge)](LICENSE)
+
+[![hassfest](https://img.shields.io/github/actions/workflow/status/ziv-daniel/Silent-bus-integration/hassfest.yaml?branch=main&label=hassfest&style=flat-square)](https://github.com/ziv-daniel/Silent-bus-integration/actions/workflows/hassfest.yaml)
+[![HACS](https://img.shields.io/github/actions/workflow/status/ziv-daniel/Silent-bus-integration/hacs.yaml?branch=main&label=HACS&style=flat-square)](https://github.com/ziv-daniel/Silent-bus-integration/actions/workflows/hacs.yaml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/ziv-daniel/Silent-bus-integration/test.yaml?branch=main&label=tests&style=flat-square)](https://github.com/ziv-daniel/Silent-bus-integration/actions/workflows/test.yaml)
+[![codecov](https://codecov.io/gh/ziv-daniel/Silent-bus-integration/branch/main/graph/badge.svg?style=flat-square)](https://codecov.io/gh/ziv-daniel/Silent-bus-integration)
 
 A comprehensive Home Assistant integration for monitoring Israeli public transportation in real-time. Track buses, trains, and light rail with live arrival times and get notified when your ride is approaching.
 
@@ -311,12 +316,24 @@ This integration uses the [BusNearby API](https://app.busnearby.co.il), which pr
 
 ## Development
 
-### Running Tests
+### Setting Up Development Environment
 
 ```bash
+# Clone the repository
+git clone https://github.com/ziv-daniel/Silent-bus-integration.git
+cd Silent-bus-integration
+
 # Install development dependencies
 pip install -r requirements_test.txt
 
+# Install pre-commit hooks
+pip install pre-commit
+pre-commit install
+```
+
+### Running Tests
+
+```bash
 # Run all tests
 pytest
 
@@ -325,7 +342,30 @@ pytest --cov=custom_components.silent_bus --cov-report=html
 
 # Run specific test file
 pytest tests/unit/test_api.py
+
+# Run pre-commit checks manually
+pre-commit run --all-files
 ```
+
+### CI/CD Pipeline
+
+This integration uses GitHub Actions for automated testing and validation:
+
+- **Hassfest**: Validates integration structure and Home Assistant compatibility
+- **HACS Validation**: Ensures HACS repository standards compliance
+- **Tests**: Runs pytest across Python 3.12/3.13 and multiple HA versions
+- **Pre-commit**: Automated code formatting and linting with Ruff
+- **Release Drafter**: Automatically generates release notes from PRs
+- **Dependabot**: Keeps dependencies and actions up to date
+
+All workflows run automatically on push and pull requests.
+
+### Code Quality
+
+This project uses:
+- **Ruff** for fast Python linting and formatting
+- **pytest** with coverage reporting via Codecov
+- **Pre-commit hooks** for automated code quality checks
 
 ### Contributing
 
@@ -333,9 +373,13 @@ Contributions are welcome! Please:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Make your changes and ensure tests pass
+4. Run pre-commit checks: `pre-commit run --all-files`
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+All PRs are automatically validated by CI/CD workflows.
 
 ## License
 
