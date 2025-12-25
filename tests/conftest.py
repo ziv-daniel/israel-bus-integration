@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant
-from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.silent_bus.const import (
@@ -19,12 +18,6 @@ from custom_components.silent_bus.const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
-
-
-@pytest.fixture(autouse=True)
-async def auto_enable_custom_integrations(hass: HomeAssistant):
-    """Enable custom integrations for all tests."""
-    await async_setup_component(hass, DOMAIN, {})
 
 
 @pytest.fixture
