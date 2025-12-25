@@ -122,7 +122,9 @@ class BusNearbyApiClient:
                 )
                 await asyncio.sleep(delay)
                 return await self._make_request(url, params, retry_count + 1)
-            raise ApiTimeoutError(f"Request timed out after {MAX_RETRIES} retries") from err
+            raise ApiTimeoutError(
+                f"Request timed out after {MAX_RETRIES} retries"
+            ) from err
 
         except ClientError as err:
             if retry_count < MAX_RETRIES:
@@ -140,7 +142,9 @@ class BusNearbyApiClient:
         except Exception as err:
             raise InvalidResponseError(f"Invalid response from API: {err}") from err
 
-    async def search_station(self, query: str, locale: str = "he") -> list[dict[str, Any]]:
+    async def search_station(
+        self, query: str, locale: str = "he"
+    ) -> list[dict[str, Any]]:
         """Search for a station by name or ID.
 
         Args:
@@ -181,7 +185,9 @@ class BusNearbyApiClient:
         except BusNearbyApiError:
             raise
         except Exception as err:
-            raise InvalidResponseError(f"Failed to parse search results: {err}") from err
+            raise InvalidResponseError(
+                f"Failed to parse search results: {err}"
+            ) from err
 
     async def get_stop_times(
         self,
@@ -211,7 +217,9 @@ class BusNearbyApiClient:
             ApiConnectionError: If connection fails
             InvalidResponseError: If response format is invalid
         """
-        _LOGGER.debug("Getting stop times for station %s, lines: %s", stop_id, bus_lines)
+        _LOGGER.debug(
+            "Getting stop times for station %s, lines: %s", stop_id, bus_lines
+        )
 
         # Ensure stop_id has the correct format (prefix with "1:" if not present)
         if not stop_id.startswith("1:"):
@@ -231,12 +239,16 @@ class BusNearbyApiClient:
             data = await self._make_request(url, params)
 
             if not isinstance(data, dict) or "times" not in data:
-                raise InvalidResponseError("Invalid response format: missing 'times' key")
+                raise InvalidResponseError(
+                    "Invalid response format: missing 'times' key"
+                )
 
             arrivals = data["times"]
 
             if not isinstance(arrivals, list):
-                raise InvalidResponseError("Invalid response format: 'times' is not a list")
+                raise InvalidResponseError(
+                    "Invalid response format: 'times' is not a list"
+                )
 
             # Filter by bus lines if specified
             if bus_lines:
@@ -245,7 +257,9 @@ class BusNearbyApiClient:
                     for arrival in arrivals
                     if arrival.get("routeShortName") in bus_lines
                 ]
-                _LOGGER.debug("Filtered to %s arrivals for lines %s", len(arrivals), bus_lines)
+                _LOGGER.debug(
+                    "Filtered to %s arrivals for lines %s", len(arrivals), bus_lines
+                )
 
             _LOGGER.debug("Retrieved %s arrivals", len(arrivals))
             return arrivals
@@ -323,7 +337,9 @@ class BusNearbyApiClient:
             itineraries = plan.get("itineraries", [])
 
             if not isinstance(itineraries, list):
-                raise InvalidResponseError("Invalid response format: 'itineraries' is not a list")
+                raise InvalidResponseError(
+                    "Invalid response format: 'itineraries' is not a list"
+                )
 
             _LOGGER.debug("Retrieved %s train routes", len(itineraries))
             return itineraries
