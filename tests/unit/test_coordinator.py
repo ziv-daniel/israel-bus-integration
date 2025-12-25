@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -49,7 +49,9 @@ async def test_coordinator_update_success(hass: HomeAssistant):
 async def test_coordinator_update_failure(hass: HomeAssistant):
     """Test coordinator update with API error."""
     mock_api_client = MagicMock()
-    mock_api_client.get_stop_times = AsyncMock(side_effect=BusNearbyApiError("Test error"))
+    mock_api_client.get_stop_times = AsyncMock(
+        side_effect=BusNearbyApiError("Test error")
+    )
 
     coordinator = SilentBusCoordinator(
         hass=hass,
