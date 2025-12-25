@@ -5,11 +5,13 @@ import logging
 from datetime import timedelta
 
 import aiohttp
+import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant
+from homeassistant.const import ATTR_ENTITY_ID, Platform
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import ApiConnectionError, BusNearbyApiClient
@@ -35,6 +37,24 @@ from .coordinator import SilentBusCoordinator
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [Platform.SENSOR]
+
+# Service names
+SERVICE_REFRESH_DATA = "refresh_data"
+SERVICE_UPDATE_LINES = "update_lines"
+
+# Service schemas
+SERVICE_REFRESH_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_ENTITY_ID): cv.entity_ids,
+    }
+)
+
+SERVICE_UPDATE_LINES_SCHEMA = vol.Schema(
+    {
+        vol.Required(ATTR_ENTITY_ID): cv.entity_id,
+        vol.Required("lines"): cv.string,
+    }
+)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -144,6 +164,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register update listener for options changes
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
+    # Register services (only once, for the first entry)
+    if not hass.services.has_service(DOMAIN, SERVICE_REFRESH_DATA):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_REFRESH_DATA,
+            async_handle_refresh_data,
+            schema=SERVICE_REFRESH_SCHEMA,
+        )
+
+    if not hass.services.has_service(DOMAIN, SERVICE_UPDATE_LINES):
+        hass.services.async_register(
+            DOMAIN,
+            SERVICE_UPDATE_LINES,
+            async_handle_update_lines,
+            schema=SERVICE_UPDATE_LINES_SCHEMA,
+        )
+
     # Log success message
     if transport_type == TRANSPORT_TYPE_TRAIN:
         _LOGGER.info(
@@ -198,3 +235,84 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """
     _LOGGER.debug("Reloading Silent Bus integration for entry %s", entry.entry_id)
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_handle_refresh_data(call: ServiceCall) -> None:
+    """Handle the refresh_data service call.
+
+    Args:
+        call: Service call data
+    """
+    hass = call.hass
+    entity_ids = call.data.get(ATTR_ENTITY_ID)
+
+    # If no entity IDs specified, refresh all coordinators
+    if not entity_ids:
+        for entry_id, entry_data in hass.data.get(DOMAIN, {}).items():
+            coordinator = entry_data.get("coordinator")
+            if coordinator:
+                _LOGGER.info("Refreshing data for coordinator %s", entry_id)
+                await coordinator.async_request_refresh()
+        return
+
+    # Refresh specific entities
+    for entity_id in entity_ids:
+        # Find the coordinator for this entity
+        for entry_id, entry_data in hass.data.get(DOMAIN, {}).items():
+            coordinator = entry_data.get("coordinator")
+            if coordinator:
+                _LOGGER.info("Refreshing data for entity %s", entity_id)
+                await coordinator.async_request_refresh()
+                break
+
+
+async def async_handle_update_lines(call: ServiceCall) -> None:
+    """Handle the update_lines service call.
+
+    Args:
+        call: Service call data
+    """
+    hass = call.hass
+    entity_id = call.data[ATTR_ENTITY_ID]
+    lines_str = call.data["lines"]
+
+    # Parse lines (comma-separated)
+    new_lines = [line.strip() for line in lines_str.split(",") if line.strip()]
+
+    if not new_lines:
+        _LOGGER.warning("No valid lines provided for update_lines service")
+        return
+
+    # Find the config entry for this entity
+    for entry_id, entry_data in hass.data.get(DOMAIN, {}).items():
+        coordinator: SilentBusCoordinator = entry_data.get("coordinator")
+        if not coordinator:
+            continue
+
+        # Only update for bus/light rail (not trains)
+        if coordinator.transport_type == TRANSPORT_TYPE_TRAIN:
+            _LOGGER.warning("Cannot update lines for train routes")
+            continue
+
+        # Update the coordinator's bus_lines
+        coordinator.bus_lines = new_lines
+
+        # Get the config entry and update it
+        entry = hass.config_entries.async_get_entry(entry_id)
+        if entry:
+            # Create new data dict with updated lines
+            new_data = dict(entry.data)
+            new_data[CONF_BUS_LINES] = new_lines
+
+            # Update the config entry
+            hass.config_entries.async_update_entry(entry, data=new_data)
+
+            _LOGGER.info(
+                "Updated lines for entity %s to: %s",
+                entity_id,
+                new_lines,
+            )
+
+            # Trigger a refresh to get new data
+            await coordinator.async_request_refresh()
+            break

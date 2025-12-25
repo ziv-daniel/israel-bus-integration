@@ -36,13 +36,4 @@ jobs:
         run: |
           pytest tests/ \
             --cov=custom_components.silent_bus \
-            --cov-report=xml \
             --cov-report=term-missing
-
-      - name: "Upload coverage to Codecov"
-        if: matrix.python-version == '3.12' && matrix.home-assistant == '2024.12.0'
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage.xml
-          fail_ci_if_error: false
