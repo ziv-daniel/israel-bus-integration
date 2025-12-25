@@ -15,13 +15,20 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import ApiConnectionError, BusNearbyApiClient
 from .const import (
     CONF_BUS_LINES,
+    CONF_FROM_STATION,
+    CONF_FROM_STATION_NAME,
     CONF_MAX_ARRIVALS,
     CONF_STATION_ID,
     CONF_STATION_NAME,
+    CONF_TO_STATION,
+    CONF_TO_STATION_NAME,
+    CONF_TRANSPORT_TYPE,
     CONF_UPDATE_INTERVAL,
     DEFAULT_MAX_ARRIVALS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    TRANSPORT_TYPE_BUS,
+    TRANSPORT_TYPE_TRAIN,
 )
 from .coordinator import SilentBusCoordinator
 
@@ -45,10 +52,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """
     _LOGGER.debug("Setting up Silent Bus integration for entry %s", entry.entry_id)
 
-    # Get configuration
-    station_id = entry.data[CONF_STATION_ID]
-    station_name = entry.data[CONF_STATION_NAME]
-    bus_lines = entry.data[CONF_BUS_LINES]
+    # Get common configuration
+    transport_type = entry.data.get(CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS)
     update_interval_seconds = entry.data.get(
         CONF_UPDATE_INTERVAL,
         DEFAULT_SCAN_INTERVAL.total_seconds(),
@@ -62,28 +67,66 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     session = async_get_clientsession(hass)
     api_client = BusNearbyApiClient(session)
 
-    # Validate connection
+    # Validate connection and create coordinator based on transport type
     try:
-        is_valid = await api_client.validate_station(station_id)
-        if not is_valid:
-            raise ConfigEntryNotReady(
-                f"Station {station_id} is not accessible. Please check your configuration."
+        if transport_type == TRANSPORT_TYPE_TRAIN:
+            # Train configuration
+            from_station = entry.data[CONF_FROM_STATION]
+            to_station = entry.data[CONF_TO_STATION]
+            from_station_name = entry.data[CONF_FROM_STATION_NAME]
+            to_station_name = entry.data[CONF_TO_STATION_NAME]
+
+            # Validate stations
+            from_valid = await api_client.validate_station(from_station)
+            to_valid = await api_client.validate_station(to_station)
+
+            if not from_valid or not to_valid:
+                raise ConfigEntryNotReady(
+                    f"Train stations {from_station} or {to_station} are not accessible."
+                )
+
+            # Create coordinator for train
+            coordinator = SilentBusCoordinator(
+                hass=hass,
+                api_client=api_client,
+                transport_type=transport_type,
+                from_station=from_station,
+                to_station=to_station,
+                from_station_name=from_station_name,
+                to_station_name=to_station_name,
+                update_interval=update_interval,
+                max_arrivals=max_arrivals,
             )
+
+        else:
+            # Bus/Light Rail configuration
+            station_id = entry.data[CONF_STATION_ID]
+            station_name = entry.data[CONF_STATION_NAME]
+            bus_lines = entry.data[CONF_BUS_LINES]
+
+            # Validate station
+            is_valid = await api_client.validate_station(station_id)
+            if not is_valid:
+                raise ConfigEntryNotReady(
+                    f"Station {station_id} is not accessible. Please check your configuration."
+                )
+
+            # Create coordinator for bus/light rail
+            coordinator = SilentBusCoordinator(
+                hass=hass,
+                api_client=api_client,
+                transport_type=transport_type,
+                station_id=station_id,
+                station_name=station_name,
+                bus_lines=bus_lines,
+                update_interval=update_interval,
+                max_arrivals=max_arrivals,
+            )
+
     except ApiConnectionError as err:
         raise ConfigEntryNotReady(
             f"Failed to connect to BusNearby API: {err}"
         ) from err
-
-    # Create coordinator
-    coordinator = SilentBusCoordinator(
-        hass=hass,
-        api_client=api_client,
-        station_id=station_id,
-        station_name=station_name,
-        bus_lines=bus_lines,
-        update_interval=update_interval,
-        max_arrivals=max_arrivals,
-    )
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
@@ -101,11 +144,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register update listener for options changes
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
-    _LOGGER.info(
-        "Successfully set up Silent Bus integration for station %s (%s)",
-        station_name,
-        station_id,
-    )
+    # Log success message
+    if transport_type == TRANSPORT_TYPE_TRAIN:
+        _LOGGER.info(
+            "Successfully set up Silent Bus integration for train route %s → %s",
+            entry.data.get(CONF_FROM_STATION_NAME, ""),
+            entry.data.get(CONF_TO_STATION_NAME, ""),
+        )
+    else:
+        _LOGGER.info(
+            "Successfully set up Silent Bus integration for station %s (%s)",
+            entry.data.get(CONF_STATION_NAME, ""),
+            entry.data.get(CONF_STATION_ID, ""),
+        )
 
     return True
 

@@ -4,16 +4,18 @@
 [![GitHub Release](https://img.shields.io/github/release/ziv-daniel/Silent-bus-integration.svg)](https://github.com/ziv-daniel/Silent-bus-integration/releases)
 [![License](https://img.shields.io/github/license/ziv-daniel/Silent-bus-integration.svg)](LICENSE)
 
-A comprehensive Home Assistant integration for monitoring Israeli public transportation in real-time. Track bus arrival times at your favorite stations and get notified when your bus is approaching.
+A comprehensive Home Assistant integration for monitoring Israeli public transportation in real-time. Track buses, trains, and light rail with live arrival times and get notified when your ride is approaching.
 
 ## Features
 
 - 🚌 **Real-time Bus Tracking** - Get live arrival times for Israeli buses
-- 🎯 **Multi-Station Support** - Monitor multiple stations simultaneously
+- 🚆 **Train Route Support** - Monitor train departures between stations
+- 🚊 **Light Rail (Kala) Support** - Track Jerusalem and Tel Aviv light rail
+- 🎯 **Multi-Station Support** - Monitor multiple stations and routes simultaneously
 - 🔄 **Automatic Updates** - Smart polling with dynamic update intervals
 - 🌍 **Bilingual** - Full support for Hebrew and English
 - 📊 **Rich Sensor Data** - Detailed attributes including direction, real-time status, and upcoming arrivals
-- ⚙️ **Easy Configuration** - User-friendly UI configuration flow
+- ⚙️ **Easy Configuration** - User-friendly UI configuration flow for all transport types
 - 🔔 **Automation Ready** - Perfect for creating arrival notifications and automations
 
 ## Installation
@@ -46,16 +48,30 @@ A comprehensive Home Assistant integration for monitoring Israeli public transpo
 2. Click **Add Integration**
 3. Search for **Silent Bus**
 4. Follow the configuration steps:
-   - **Step 1**: Enter your station number (e.g., `24068`)
-   - **Step 2**: Enter bus line numbers separated by commas (e.g., `249, 40, 605`)
+   - **Step 1**: Select transport type (Bus, Train, or Light Rail)
+   - **For Buses/Light Rail**:
+     - **Step 2**: Enter station number (e.g., `24068`)
+     - **Step 3**: Enter line numbers separated by commas (e.g., `249, 40, 605`)
+   - **For Trains**:
+     - **Step 2**: Enter origin station (e.g., `3600` for Tel Aviv Center)
+     - **Step 2**: Enter destination station (e.g., `2800` for Haifa Center)
 
 ### Finding Station Numbers
 
-You can find station numbers at:
+#### Buses and Light Rail
 - [bus.co.il](https://www.bus.co.il) - Official Israeli bus information site
 - [BusNearby](https://app.busnearby.co.il) - Real-time bus tracking app
 
-Simply search for your station and note the station number.
+#### Trains
+- [rail.co.il](https://www.rail.co.il) - Israel Railways official site
+
+Common train station IDs:
+- Tel Aviv - Savidor Center: `3600`
+- Tel Aviv - HaShalom: `3700`
+- Jerusalem - Yitzhak Navon: `680`
+- Haifa Center - HaShmona: `2800`
+- Beer Sheva Center: `5800`
+- Ben Gurion Airport: `8600`
 
 ### Configuration Options
 
@@ -67,64 +83,95 @@ After setup, you can modify settings by clicking **Configure** on the integratio
 
 ## Sensors
 
-The integration creates one sensor per bus line with the following format:
+### Bus and Light Rail Sensors
 
-**Entity ID**: `sensor.bus_{station_id}_line_{line_number}`
+The integration creates one sensor per line:
 
-**Example**: `sensor.bus_24068_line_249`
+**Entity ID**: `sensor.{type}_station_{station_name}_line_{line_number}`
 
-### Sensor State
+**Example**:
+- Bus: `sensor.bus_station_azrieli_center_line_249`
+- Light Rail: `sensor.light_rail_station_central_station_line_1`
 
-The sensor state shows minutes until the next bus arrival:
-- `5` - Bus arriving in 5 minutes
-- `Arrived` - Bus is at the station
+#### Sensor State
+
+Shows minutes until the next arrival:
+- `5` - Arriving in 5 minutes
+- `Arrived` - Currently at the station
 - `No data` - No upcoming arrivals
 - `Unavailable` - API connection error
 
-### Sensor Attributes
-
-Each sensor provides rich attributes:
+#### Bus/Light Rail Sensor Attributes
 
 ```yaml
 line_number: "249"
 station_id: "24068"
-station_name: "Arlozorov Terminal"
-next_arrival: "2025-12-24T14:35:00+02:00"
+station_name: "Azrieli Center"
+next_arrival: "2025-12-25T14:35:00+02:00"
 real_time: true
 direction: "Tel Aviv - Jerusalem"
 upcoming_arrivals:
-  - arrival_time: "2025-12-24T14:35:00+02:00"
+  - arrival_time: "2025-12-25T14:35:00+02:00"
     minutes_until: 5
     is_realtime: true
     direction: "Tel Aviv - Jerusalem"
-  - arrival_time: "2025-12-24T14:50:00+02:00"
-    minutes_until: 20
-    is_realtime: false
-    direction: "Tel Aviv - Jerusalem"
-last_update: "2025-12-24T14:30:15+02:00"
-attribution: "Data provided by BusNearby"
+```
+
+### Train Sensors
+
+One sensor per route:
+
+**Entity ID**: `sensor.train_route_{from}_{to}_next_train`
+
+**Example**: `sensor.train_route_tel_aviv_center_haifa_center_next_train`
+
+#### Train Sensor State
+
+Shows minutes until next departure:
+- `15` - Departing in 15 minutes
+- `Departing` - Train is departing now
+- `No data` - No upcoming trains
+
+#### Train Sensor Attributes
+
+```yaml
+from_station: "3600"
+to_station: "2800"
+from_station_name: "Tel Aviv - Savidor Center"
+to_station_name: "Haifa Center - HaShmona"
+next_arrival: "2025-12-25T14:45:00+02:00"
+duration_minutes: 65
+real_time: true
+direction: "Haifa Center - HaShmona"
+upcoming_arrivals:
+  - arrival_time: "2025-12-25T14:45:00+02:00"
+    minutes_until: 15
+    duration_minutes: 65
+    is_realtime: true
 ```
 
 ## Usage Examples
 
 ### Dashboard Card
 
-Display bus times using the built-in entities card:
+Display public transport times using the built-in entities card:
 
 ```yaml
 type: entities
-title: Bus Times - Home
+title: Public Transport
 entities:
-  - entity: sensor.bus_24068_line_249
-    name: Line 249
-    icon: mdi:bus
-  - entity: sensor.bus_24068_line_40
-    name: Line 40
-    icon: mdi:bus
-  - entity: sensor.bus_24068_line_605
-    name: Line 605
-    icon: mdi:bus
+  - entity: sensor.bus_station_azrieli_center_line_249
+    name: Bus 249
+  - entity: sensor.light_rail_station_central_station_line_1
+    name: Light Rail 1
+  - entity: sensor.train_route_tel_aviv_center_haifa_center_next_train
+    name: Train to Haifa
 ```
+
+Icons are automatically set based on transport type:
+- 🚌 Bus: `mdi:bus`
+- 🚊 Light Rail: `mdi:tram`
+- 🚆 Train: `mdi:train`
 
 ### Automation: Notify When Bus Approaching
 
@@ -135,17 +182,38 @@ automation:
   - alias: "Bus 249 Approaching"
     trigger:
       - platform: numeric_state
-        entity_id: sensor.bus_24068_line_249
+        entity_id: sensor.bus_station_azrieli_center_line_249
         below: 10
     condition:
       - condition: numeric_state
-        entity_id: sensor.bus_24068_line_249
+        entity_id: sensor.bus_station_azrieli_center_line_249
         above: 0
     action:
       - service: notify.mobile_app_your_phone
         data:
           title: "Bus 249 Approaching"
-          message: "Bus arrives in {{ states('sensor.bus_24068_line_249') }} minutes"
+          message: "Bus arrives in {{ states('sensor.bus_station_azrieli_center_line_249') }} minutes"
+```
+
+### Automation: Train Departure Notification
+
+Get notified when your train is departing soon:
+
+```yaml
+automation:
+  - alias: "Train to Haifa Departing Soon"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.train_route_tel_aviv_center_haifa_center_next_train
+        below: 15
+    action:
+      - service: notify.mobile_app_your_phone
+        data:
+          title: "Train Departing Soon"
+          message: >
+            Train to {{ state_attr('sensor.train_route_tel_aviv_center_haifa_center_next_train', 'to_station_name') }}
+            departs in {{ states('sensor.train_route_tel_aviv_center_haifa_center_next_train') }} minutes.
+            Journey time: {{ state_attr('sensor.train_route_tel_aviv_center_haifa_center_next_train', 'duration_minutes') }} min
 ```
 
 ### Automation: Turn On Lights When Bus is Near
@@ -157,7 +225,7 @@ automation:
   - alias: "Prepare to Leave - Bus Approaching"
     trigger:
       - platform: numeric_state
-        entity_id: sensor.bus_24068_line_249
+        entity_id: sensor.bus_station_azrieli_center_line_249
         below: 5
     action:
       - service: light.turn_on
@@ -165,7 +233,7 @@ automation:
           entity_id: light.hallway
       - service: notify.mobile_app_your_phone
         data:
-          message: "Time to leave! Bus 249 in {{ states('sensor.bus_24068_line_249') }} min"
+          message: "Time to leave! Bus 249 in {{ states('sensor.bus_station_azrieli_center_line_249') }} min"
 ```
 
 ### Template Sensor: Next Bus Across Multiple Lines
@@ -178,9 +246,9 @@ template:
       - name: "Next Bus Home"
         state: >
           {% set lines = [
-            states('sensor.bus_24068_line_249'),
-            states('sensor.bus_24068_line_40'),
-            states('sensor.bus_24068_line_605')
+            states('sensor.bus_station_azrieli_center_line_249'),
+            states('sensor.bus_station_azrieli_center_line_40'),
+            states('sensor.bus_station_azrieli_center_line_605')
           ] %}
           {% set times = lines | reject('in', ['No data', 'Arrived', 'unavailable']) | map('int') | list %}
           {% if times | length > 0 %}
@@ -191,6 +259,8 @@ template:
         unit_of_measurement: "min"
         icon: mdi:bus-clock
 ```
+
+For more examples including train and light rail configurations, see [examples/configuration_examples.yaml](examples/configuration_examples.yaml).
 
 ## Smart Features
 

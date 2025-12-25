@@ -17,6 +17,8 @@ from .const import (
     MIN_SCAN_INTERVAL,
     NIGHT_HOUR_END,
     NIGHT_HOUR_START,
+    TRANSPORT_TYPE_BUS,
+    TRANSPORT_TYPE_TRAIN,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -29,34 +31,61 @@ class SilentBusCoordinator(DataUpdateCoordinator):
         self,
         hass: HomeAssistant,
         api_client: BusNearbyApiClient,
-        station_id: str,
-        station_name: str,
-        bus_lines: list[str],
         update_interval: timedelta,
         max_arrivals: int = DEFAULT_MAX_ARRIVALS,
+        transport_type: str = TRANSPORT_TYPE_BUS,
+        # Bus/Light Rail parameters
+        station_id: str | None = None,
+        station_name: str | None = None,
+        bus_lines: list[str] | None = None,
+        # Train parameters
+        from_station: str | None = None,
+        to_station: str | None = None,
+        from_station_name: str | None = None,
+        to_station_name: str | None = None,
     ) -> None:
         """Initialize the coordinator.
 
         Args:
             hass: Home Assistant instance
             api_client: BusNearby API client
-            station_id: Station ID to monitor
-            station_name: Station name for display
-            bus_lines: List of bus line numbers to track
             update_interval: How often to update data
             max_arrivals: Maximum number of arrivals to track per line
+            transport_type: Type of transport (bus, train, light_rail)
+            station_id: Station ID to monitor (for bus/light rail)
+            station_name: Station name for display (for bus/light rail)
+            bus_lines: List of bus line numbers to track (for bus/light rail)
+            from_station: Origin station ID (for trains)
+            to_station: Destination station ID (for trains)
+            from_station_name: Origin station name (for trains)
+            to_station_name: Destination station name (for trains)
         """
         self.api_client = api_client
+        self.transport_type = transport_type
+        self.max_arrivals = max_arrivals
+        self._base_update_interval = update_interval
+
+        # Bus/Light Rail attributes
         self.station_id = station_id
         self.station_name = station_name
         self.bus_lines = bus_lines
-        self.max_arrivals = max_arrivals
-        self._base_update_interval = update_interval
+
+        # Train attributes
+        self.from_station = from_station
+        self.to_station = to_station
+        self.from_station_name = from_station_name
+        self.to_station_name = to_station_name
+
+        # Generate unique coordinator name
+        if transport_type == TRANSPORT_TYPE_TRAIN:
+            coordinator_name = f"{DOMAIN}_{from_station}_{to_station}"
+        else:
+            coordinator_name = f"{DOMAIN}_{station_id}"
 
         super().__init__(
             hass,
             _LOGGER,
-            name=f"{DOMAIN}_{station_id}",
+            name=coordinator_name,
             update_interval=update_interval,
         )
 
@@ -64,33 +93,51 @@ class SilentBusCoordinator(DataUpdateCoordinator):
         """Fetch data from API.
 
         Returns:
-            Dictionary mapping line numbers to arrival data
+            Dictionary mapping line numbers/routes to arrival data
 
         Raises:
             UpdateFailed: If update fails
         """
         try:
-            _LOGGER.debug(
-                "Fetching data for station %s, lines: %s",
-                self.station_id,
-                self.bus_lines,
-            )
+            if self.transport_type == TRANSPORT_TYPE_TRAIN:
+                # Fetch train routes
+                _LOGGER.debug(
+                    "Fetching train routes from %s to %s",
+                    self.from_station,
+                    self.to_station,
+                )
 
-            # Fetch arrivals from API
-            arrivals = await self.api_client.get_stop_times(
-                self.station_id,
-                self.bus_lines,
-                number_of_departures=self.max_arrivals,
-            )
+                itineraries = await self.api_client.get_train_routes(
+                    self.from_station,
+                    self.to_station,
+                    number_of_routes=self.max_arrivals,
+                )
 
-            # Process arrivals into structured data
-            processed_data = self._process_arrivals(arrivals)
+                # Process train routes
+                processed_data = self._process_train_routes(itineraries)
+
+            else:
+                # Fetch bus/light rail arrivals
+                _LOGGER.debug(
+                    "Fetching data for station %s, lines: %s",
+                    self.station_id,
+                    self.bus_lines,
+                )
+
+                arrivals = await self.api_client.get_stop_times(
+                    self.station_id,
+                    self.bus_lines,
+                    number_of_departures=self.max_arrivals,
+                )
+
+                # Process arrivals into structured data
+                processed_data = self._process_arrivals(arrivals)
 
             # Adjust update interval based on data
             self._adjust_update_interval(processed_data)
 
             _LOGGER.debug(
-                "Successfully fetched data for %s lines",
+                "Successfully fetched data for %s items",
                 len(processed_data),
             )
 
@@ -153,6 +200,65 @@ class SilentBusCoordinator(DataUpdateCoordinator):
         # Sort arrivals by time for each line
         for line_number in processed:
             processed[line_number].sort(key=lambda x: x["minutes_until"])
+
+        return processed
+
+    def _process_train_routes(self, itineraries: list[dict[str, Any]]) -> dict[str, Any]:
+        """Process train route itineraries into structured format.
+
+        Args:
+            itineraries: Raw itinerary data from API
+
+        Returns:
+            Dictionary with route key mapping to processed departure data
+        """
+        processed: dict[str, list[dict[str, Any]]] = {}
+        now = datetime.now()
+
+        route_key = "train_route"  # Single key for train routes
+
+        for idx, itinerary in enumerate(itineraries):
+            # Get departure time
+            start_time = itinerary.get("startTime")
+            if not start_time:
+                continue
+
+            # Convert to datetime (milliseconds timestamp)
+            departure_time = datetime.fromtimestamp(start_time / 1000)
+
+            # Calculate minutes until departure
+            time_delta = departure_time - now
+            minutes_until = max(0, int(time_delta.total_seconds() / 60))
+
+            # Get duration
+            duration_seconds = itinerary.get("duration", 0)
+            duration_minutes = int(duration_seconds / 60)
+
+            # Extract route details (legs)
+            legs = itinerary.get("legs", [])
+            route_description = " → ".join(
+                [leg.get("to", {}).get("name", "Unknown") for leg in legs if leg.get("mode") == "RAIL"]
+            )
+
+            # Create processed route entry
+            processed_route = {
+                "arrival_time": departure_time.isoformat(),
+                "minutes_until": minutes_until,
+                "duration_minutes": duration_minutes,
+                "is_realtime": itinerary.get("realtime", False),
+                "direction": route_description or f"{self.to_station_name}",
+                "route_index": idx,
+            }
+
+            # Add to routes list
+            if route_key not in processed:
+                processed[route_key] = []
+
+            processed[route_key].append(processed_route)
+
+        # Sort routes by departure time
+        if route_key in processed:
+            processed[route_key].sort(key=lambda x: x["minutes_until"])
 
         return processed
 

@@ -23,9 +23,18 @@ from .const import (
     ATTR_UPCOMING_ARRIVALS,
     ATTRIBUTION,
     CONF_BUS_LINES,
+    CONF_FROM_STATION,
+    CONF_FROM_STATION_NAME,
     CONF_STATION_ID,
     CONF_STATION_NAME,
+    CONF_TO_STATION,
+    CONF_TO_STATION_NAME,
+    CONF_TRANSPORT_TYPE,
     DOMAIN,
+    TRANSPORT_TYPE_BUS,
+    TRANSPORT_TYPE_ICONS,
+    TRANSPORT_TYPE_LABELS,
+    TRANSPORT_TYPE_TRAIN,
 )
 from .coordinator import SilentBusCoordinator
 
@@ -45,22 +54,48 @@ async def async_setup_entry(
         async_add_entities: Callback to add entities
     """
     coordinator: SilentBusCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    station_id = entry.data[CONF_STATION_ID]
-    station_name = entry.data[CONF_STATION_NAME]
-    bus_lines = entry.data[CONF_BUS_LINES]
+    transport_type = entry.data.get(CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS)
 
-    # Create a sensor for each bus line
-    entities = [
-        SilentBusSensor(coordinator, station_id, station_name, line_number)
-        for line_number in bus_lines
-    ]
+    entities = []
+
+    if transport_type == TRANSPORT_TYPE_TRAIN:
+        # Create a single sensor for the train route
+        from_station = entry.data[CONF_FROM_STATION]
+        to_station = entry.data[CONF_TO_STATION]
+        from_station_name = entry.data[CONF_FROM_STATION_NAME]
+        to_station_name = entry.data[CONF_TO_STATION_NAME]
+
+        entities = [
+            SilentBusTrainSensor(
+                coordinator,
+                from_station,
+                to_station,
+                from_station_name,
+                to_station_name,
+            )
+        ]
+    else:
+        # Create a sensor for each bus/light rail line
+        station_id = entry.data[CONF_STATION_ID]
+        station_name = entry.data[CONF_STATION_NAME]
+        bus_lines = entry.data[CONF_BUS_LINES]
+
+        entities = [
+            SilentBusSensor(
+                coordinator,
+                station_id,
+                station_name,
+                line_number,
+                transport_type,
+            )
+            for line_number in bus_lines
+        ]
 
     async_add_entities(entities, True)
 
     _LOGGER.info(
-        "Set up %s Silent Bus sensors for station %s",
+        "Set up %s Silent Bus sensors",
         len(entities),
-        station_id,
     )
 
 
@@ -68,7 +103,6 @@ class SilentBusSensor(CoordinatorEntity, SensorEntity):
     """Representation of a Silent Bus sensor."""
 
     _attr_has_entity_name = True
-    _attr_icon = "mdi:bus"
 
     def __init__(
         self,
@@ -76,6 +110,7 @@ class SilentBusSensor(CoordinatorEntity, SensorEntity):
         station_id: str,
         station_name: str,
         line_number: str,
+        transport_type: str = TRANSPORT_TYPE_BUS,
     ) -> None:
         """Initialize the sensor.
 
@@ -83,23 +118,29 @@ class SilentBusSensor(CoordinatorEntity, SensorEntity):
             coordinator: Data update coordinator
             station_id: Station ID
             station_name: Station name
-            line_number: Bus line number
+            line_number: Bus/Light Rail line number
+            transport_type: Type of transport (bus/light_rail)
         """
         super().__init__(coordinator)
 
         self._station_id = station_id
         self._station_name = station_name
         self._line_number = line_number
+        self._transport_type = transport_type
+
+        # Set icon based on transport type
+        self._attr_icon = TRANSPORT_TYPE_ICONS.get(transport_type, "mdi:bus")
 
         # Set unique ID
         self._attr_unique_id = f"{DOMAIN}_{station_id}_{line_number}"
 
         # Set device info
+        transport_label = TRANSPORT_TYPE_LABELS.get(transport_type, "Bus")
         self._attr_device_info = {
             "identifiers": {(DOMAIN, f"{station_id}")},
-            "name": f"Bus Station {station_name}",
+            "name": f"{transport_label} Station {station_name}",
             "manufacturer": "Silent Bus",
-            "model": "Bus Stop",
+            "model": f"{transport_label} Stop",
         }
 
         # Set entity name
@@ -171,6 +212,129 @@ class SilentBusSensor(CoordinatorEntity, SensorEntity):
             True if coordinator has data
         """
         # Entity is available if coordinator is available
+        return self.coordinator.last_update_success
+
+    @property
+    def entity_registry_enabled_default(self) -> bool:
+        """Return if entity should be enabled by default.
+
+        Returns:
+            True to enable by default
+        """
+        return True
+
+
+class SilentBusTrainSensor(CoordinatorEntity, SensorEntity):
+    """Representation of a train route sensor."""
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:train"
+
+    def __init__(
+        self,
+        coordinator: SilentBusCoordinator,
+        from_station: str,
+        to_station: str,
+        from_station_name: str,
+        to_station_name: str,
+    ) -> None:
+        """Initialize the sensor.
+
+        Args:
+            coordinator: Data update coordinator
+            from_station: Origin station ID
+            to_station: Destination station ID
+            from_station_name: Origin station name
+            to_station_name: Destination station name
+        """
+        super().__init__(coordinator)
+
+        self._from_station = from_station
+        self._to_station = to_station
+        self._from_station_name = from_station_name
+        self._to_station_name = to_station_name
+
+        # Set unique ID
+        self._attr_unique_id = f"{DOMAIN}_train_{from_station}_{to_station}"
+
+        # Set device info
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, f"train_{from_station}_{to_station}")},
+            "name": f"Train Route {from_station_name} → {to_station_name}",
+            "manufacturer": "Silent Bus",
+            "model": "Train Route",
+        }
+
+        # Set entity name
+        self._attr_name = f"Next Train"
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the state of the sensor.
+
+        Returns:
+            Minutes until next departure, or status string
+        """
+        next_departure = self.coordinator.get_next_arrival("train_route")
+
+        if next_departure is None:
+            return "No data"
+
+        minutes = next_departure["minutes_until"]
+
+        if minutes == 0:
+            return "Departing"
+
+        return str(minutes)
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        """Return the unit of measurement.
+
+        Returns:
+            Unit string
+        """
+        if self.native_value in ("No data", "Departing"):
+            return None
+        return "min"
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes.
+
+        Returns:
+            Dictionary of attributes
+        """
+        next_departure = self.coordinator.get_next_arrival("train_route")
+        all_departures = self.coordinator.get_line_data("train_route")
+
+        attributes = {
+            "from_station": self._from_station,
+            "to_station": self._to_station,
+            "from_station_name": self._from_station_name,
+            "to_station_name": self._to_station_name,
+            ATTR_ATTRIBUTION: ATTRIBUTION,
+            ATTR_LAST_UPDATE: datetime.now().isoformat(),
+        }
+
+        if next_departure:
+            attributes[ATTR_NEXT_ARRIVAL] = next_departure["arrival_time"]
+            attributes[ATTR_REAL_TIME] = next_departure["is_realtime"]
+            attributes[ATTR_DIRECTION] = next_departure["direction"]
+            attributes["duration_minutes"] = next_departure.get("duration_minutes")
+
+        if all_departures:
+            attributes[ATTR_UPCOMING_ARRIVALS] = all_departures
+
+        return attributes
+
+    @property
+    def available(self) -> bool:
+        """Return if entity is available.
+
+        Returns:
+            True if coordinator has data
+        """
         return self.coordinator.last_update_success
 
     @property
