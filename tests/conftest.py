@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.silent_bus.const import (
     CONF_BUS_LINES,
@@ -63,8 +64,7 @@ def mock_api_client():
 @pytest.fixture
 def mock_config_entry():
     """Mock config entry."""
-    return MagicMock(
-        entry_id="test_entry",
+    return MockConfigEntry(
         domain=DOMAIN,
         data={
             CONF_STATION_ID: "24068",
