@@ -86,12 +86,18 @@ def mock_config_entry():
 
 
 @pytest.fixture
-def simple_mock_config_entry():
+def simple_mock_config_entry(hass):
     """Simple mock config entry for coordinator tests."""
-    return MockConfigEntry(
+    from homeassistant.config_entries import ConfigEntryState
+
+    entry = MockConfigEntry(
         domain=DOMAIN,
         data={},
     )
+    entry.add_to_hass(hass)
+    # Set entry state to SETUP_IN_PROGRESS to allow async_config_entry_first_refresh()
+    entry._async_set_state(hass, ConfigEntryState.SETUP_IN_PROGRESS, "")
+    return entry
 
 
 @pytest.fixture
