@@ -1,4 +1,5 @@
 """The Silent Bus integration."""
+
 from __future__ import annotations
 
 import logging
@@ -143,9 +144,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             )
 
     except ApiConnectionError as err:
-        raise ConfigEntryNotReady(
-            f"Failed to connect to BusNearby API: {err}"
-        ) from err
+        raise ConfigEntryNotReady(f"Failed to connect to BusNearby API: {err}") from err
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()

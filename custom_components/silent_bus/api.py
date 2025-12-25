@@ -1,4 +1,5 @@
 """API client for BusNearby."""
+
 from __future__ import annotations
 
 import asyncio
