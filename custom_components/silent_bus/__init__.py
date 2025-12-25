@@ -109,12 +109,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             coordinator = SilentBusCoordinator(
                 hass=hass,
                 api_client=api_client,
+                update_interval=update_interval,
+                config_entry=entry,
                 transport_type=transport_type,
                 from_station=from_station,
                 to_station=to_station,
                 from_station_name=from_station_name,
                 to_station_name=to_station_name,
-                update_interval=update_interval,
                 max_arrivals=max_arrivals,
             )
 
@@ -135,11 +136,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             coordinator = SilentBusCoordinator(
                 hass=hass,
                 api_client=api_client,
+                update_interval=update_interval,
+                config_entry=entry,
                 transport_type=transport_type,
                 station_id=station_id,
                 station_name=station_name,
                 bus_lines=bus_lines,
-                update_interval=update_interval,
                 max_arrivals=max_arrivals,
             )
 

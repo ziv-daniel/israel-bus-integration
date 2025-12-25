@@ -33,6 +33,7 @@ class SilentBusCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         api_client: BusNearbyApiClient,
         update_interval: timedelta,
+        config_entry=None,
         max_arrivals: int = DEFAULT_MAX_ARRIVALS,
         transport_type: str = TRANSPORT_TYPE_BUS,
         # Bus/Light Rail parameters
@@ -51,6 +52,7 @@ class SilentBusCoordinator(DataUpdateCoordinator):
             hass: Home Assistant instance
             api_client: BusNearby API client
             update_interval: How often to update data
+            config_entry: Config entry (optional, required for async_config_entry_first_refresh)
             max_arrivals: Maximum number of arrivals to track per line
             transport_type: Type of transport (bus, train, light_rail)
             station_id: Station ID to monitor (for bus/light rail)
@@ -88,6 +90,7 @@ class SilentBusCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name=coordinator_name,
             update_interval=update_interval,
+            config_entry=config_entry,
         )
 
     async def _async_update_data(self) -> dict[str, Any]:

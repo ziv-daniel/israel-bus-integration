@@ -19,6 +19,14 @@ from custom_components.silent_bus.const import (
     DOMAIN,
 )
 
+pytest_plugins = "pytest_homeassistant_custom_component"
+
+
+@pytest.fixture(autouse=True)
+def auto_enable_custom_integrations(enable_custom_integrations):
+    """Enable custom integrations for all tests."""
+    return
+
 
 @pytest.fixture
 def mock_api_client():
@@ -74,6 +82,15 @@ def mock_config_entry():
             CONF_MAX_ARRIVALS: DEFAULT_MAX_ARRIVALS,
         },
         options={},
+    )
+
+
+@pytest.fixture
+def simple_mock_config_entry():
+    """Simple mock config entry for coordinator tests."""
+    return MockConfigEntry(
+        domain=DOMAIN,
+        data={},
     )
 
 

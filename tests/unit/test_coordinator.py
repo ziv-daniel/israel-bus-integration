@@ -14,7 +14,7 @@ from custom_components.silent_bus.coordinator import SilentBusCoordinator
 
 
 @pytest.mark.asyncio
-async def test_coordinator_update_success(hass: HomeAssistant):
+async def test_coordinator_update_success(hass: HomeAssistant, simple_mock_config_entry):
     """Test successful coordinator update."""
     mock_api_client = MagicMock()
     mock_api_client.get_stop_times = AsyncMock(
@@ -32,10 +32,11 @@ async def test_coordinator_update_success(hass: HomeAssistant):
     coordinator = SilentBusCoordinator(
         hass=hass,
         api_client=mock_api_client,
+        update_interval=timedelta(seconds=30),
+        config_entry=simple_mock_config_entry,
         station_id="24068",
         station_name="Test Station",
         bus_lines=["249"],
-        update_interval=timedelta(seconds=30),
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -46,7 +47,7 @@ async def test_coordinator_update_success(hass: HomeAssistant):
 
 
 @pytest.mark.asyncio
-async def test_coordinator_update_failure(hass: HomeAssistant):
+async def test_coordinator_update_failure(hass: HomeAssistant, simple_mock_config_entry):
     """Test coordinator update with API error."""
     mock_api_client = MagicMock()
     mock_api_client.get_stop_times = AsyncMock(
@@ -56,10 +57,11 @@ async def test_coordinator_update_failure(hass: HomeAssistant):
     coordinator = SilentBusCoordinator(
         hass=hass,
         api_client=mock_api_client,
+        update_interval=timedelta(seconds=30),
+        config_entry=simple_mock_config_entry,
         station_id="24068",
         station_name="Test Station",
         bus_lines=["249"],
-        update_interval=timedelta(seconds=30),
     )
 
     with pytest.raises(UpdateFailed):
@@ -67,7 +69,7 @@ async def test_coordinator_update_failure(hass: HomeAssistant):
 
 
 @pytest.mark.asyncio
-async def test_coordinator_process_arrivals(hass: HomeAssistant):
+async def test_coordinator_process_arrivals(hass: HomeAssistant, simple_mock_config_entry):
     """Test arrival data processing."""
     mock_api_client = MagicMock()
     current_time = int(datetime.now().timestamp())
@@ -96,10 +98,11 @@ async def test_coordinator_process_arrivals(hass: HomeAssistant):
     coordinator = SilentBusCoordinator(
         hass=hass,
         api_client=mock_api_client,
+        update_interval=timedelta(seconds=30),
+        config_entry=simple_mock_config_entry,
         station_id="24068",
         station_name="Test Station",
         bus_lines=["249"],
-        update_interval=timedelta(seconds=30),
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -112,7 +115,7 @@ async def test_coordinator_process_arrivals(hass: HomeAssistant):
 
 
 @pytest.mark.asyncio
-async def test_coordinator_get_next_arrival(hass: HomeAssistant):
+async def test_coordinator_get_next_arrival(hass: HomeAssistant, simple_mock_config_entry):
     """Test getting next arrival for a line."""
     mock_api_client = MagicMock()
     current_time = int(datetime.now().timestamp())
@@ -132,10 +135,11 @@ async def test_coordinator_get_next_arrival(hass: HomeAssistant):
     coordinator = SilentBusCoordinator(
         hass=hass,
         api_client=mock_api_client,
+        update_interval=timedelta(seconds=30),
+        config_entry=simple_mock_config_entry,
         station_id="24068",
         station_name="Test Station",
         bus_lines=["249"],
-        update_interval=timedelta(seconds=30),
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -147,7 +151,7 @@ async def test_coordinator_get_next_arrival(hass: HomeAssistant):
 
 
 @pytest.mark.asyncio
-async def test_coordinator_update_interval_adjustment(hass: HomeAssistant):
+async def test_coordinator_update_interval_adjustment(hass: HomeAssistant, simple_mock_config_entry):
     """Test dynamic update interval adjustment."""
     mock_api_client = MagicMock()
     current_time = int(datetime.now().timestamp())
@@ -168,10 +172,11 @@ async def test_coordinator_update_interval_adjustment(hass: HomeAssistant):
     coordinator = SilentBusCoordinator(
         hass=hass,
         api_client=mock_api_client,
+        update_interval=timedelta(seconds=30),
+        config_entry=simple_mock_config_entry,
         station_id="24068",
         station_name="Test Station",
         bus_lines=["249"],
-        update_interval=timedelta(seconds=30),
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -182,7 +187,7 @@ async def test_coordinator_update_interval_adjustment(hass: HomeAssistant):
 
 
 @pytest.mark.asyncio
-async def test_coordinator_multiple_lines(hass: HomeAssistant):
+async def test_coordinator_multiple_lines(hass: HomeAssistant, simple_mock_config_entry):
     """Test coordinator with multiple bus lines."""
     mock_api_client = MagicMock()
     current_time = int(datetime.now().timestamp())
@@ -209,10 +214,11 @@ async def test_coordinator_multiple_lines(hass: HomeAssistant):
     coordinator = SilentBusCoordinator(
         hass=hass,
         api_client=mock_api_client,
+        update_interval=timedelta(seconds=30),
+        config_entry=simple_mock_config_entry,
         station_id="24068",
         station_name="Test Station",
         bus_lines=["249", "40"],
-        update_interval=timedelta(seconds=30),
     )
 
     await coordinator.async_config_entry_first_refresh()
@@ -224,7 +230,7 @@ async def test_coordinator_multiple_lines(hass: HomeAssistant):
 
 
 @pytest.mark.asyncio
-async def test_coordinator_no_data_for_line(hass: HomeAssistant):
+async def test_coordinator_no_data_for_line(hass: HomeAssistant, simple_mock_config_entry):
     """Test coordinator when no data available for a line."""
     mock_api_client = MagicMock()
     mock_api_client.get_stop_times = AsyncMock(return_value=[])
@@ -232,10 +238,11 @@ async def test_coordinator_no_data_for_line(hass: HomeAssistant):
     coordinator = SilentBusCoordinator(
         hass=hass,
         api_client=mock_api_client,
+        update_interval=timedelta(seconds=30),
+        config_entry=simple_mock_config_entry,
         station_id="24068",
         station_name="Test Station",
         bus_lines=["249"],
-        update_interval=timedelta(seconds=30),
     )
 
     await coordinator.async_config_entry_first_refresh()
