@@ -1,8 +1,12 @@
 # Silent Bus - Home Assistant Integration
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-[![GitHub Release](https://img.shields.io/github/release/ziv-daniel/Silent-bus-integration.svg)](https://github.com/ziv-daniel/Silent-bus-integration/releases)
-[![License](https://img.shields.io/github/license/ziv-daniel/Silent-bus-integration.svg)](LICENSE)
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge)](https://github.com/hacs/integration)
+[![GitHub Release](https://img.shields.io/github/release/ziv-daniel/Silent-bus-integration.svg?style=for-the-badge)](https://github.com/ziv-daniel/Silent-bus-integration/releases)
+[![License](https://img.shields.io/github/license/ziv-daniel/Silent-bus-integration.svg?style=for-the-badge)](LICENSE)
+
+[![hassfest](https://img.shields.io/github/actions/workflow/status/ziv-daniel/Silent-bus-integration/hassfest.yaml?branch=main&label=hassfest&style=flat-square)](https://github.com/ziv-daniel/Silent-bus-integration/actions/workflows/hassfest.yaml)
+[![HACS](https://img.shields.io/github/actions/workflow/status/ziv-daniel/Silent-bus-integration/hacs.yaml?branch=main&label=HACS&style=flat-square)](https://github.com/ziv-daniel/Silent-bus-integration/actions/workflows/hacs.yaml)
+[![Tests](https://img.shields.io/github/actions/workflow/status/ziv-daniel/Silent-bus-integration/test.yaml?branch=main&label=tests&style=flat-square)](https://github.com/ziv-daniel/Silent-bus-integration/actions/workflows/test.yaml)
 
 A comprehensive Home Assistant integration for monitoring Israeli public transportation in real-time. Track buses, trains, and light rail with live arrival times and get notified when your ride is approaching.
 
@@ -17,6 +21,9 @@ A comprehensive Home Assistant integration for monitoring Israeli public transpo
 - 📊 **Rich Sensor Data** - Detailed attributes including direction, real-time status, and upcoming arrivals
 - ⚙️ **Easy Configuration** - User-friendly UI configuration flow for all transport types
 - 🔔 **Automation Ready** - Perfect for creating arrival notifications and automations
+- 🛠️ **Custom Services** - Force refresh and dynamically update tracked lines
+- 📈 **Long-term Statistics** - Sensor data compatible with Home Assistant history and statistics
+- ⚡ **Device Class Support** - Proper duration device class for time-based sensors
 
 ## Installation
 
@@ -260,7 +267,118 @@ template:
         icon: mdi:bus-clock
 ```
 
+### Automation: Force Refresh Before Leaving
+
+Refresh arrival times when you're getting ready to leave:
+
+```yaml
+automation:
+  - alias: "Refresh Bus Times When Leaving"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.front_door
+        to: "on"
+    action:
+      - service: silent_bus.refresh_data
+        data:
+          entity_id: sensor.bus_station_azrieli_center_line_249
+```
+
+### Automation: Dynamic Line Updates
+
+Update tracked lines based on time of day:
+
+```yaml
+automation:
+  - alias: "Update Bus Lines for Morning Commute"
+    trigger:
+      - platform: time
+        at: "07:00:00"
+    action:
+      - service: silent_bus.update_lines
+        data:
+          entity_id: sensor.bus_station_azrieli_center_line_249
+          lines: "249, 40, 189"  # Morning express lines
+
+  - alias: "Update Bus Lines for Evening Commute"
+    trigger:
+      - platform: time
+        at: "17:00:00"
+    action:
+      - service: silent_bus.update_lines
+        data:
+          entity_id: sensor.bus_station_azrieli_center_line_249
+          lines: "249, 40, 605"  # Evening lines
+```
+
+### Script: Check Next Bus and Decide
+
+Create a script to check if you need to hurry:
+
+```yaml
+script:
+  check_bus_status:
+    sequence:
+      - service: silent_bus.refresh_data
+      - delay:
+          seconds: 2
+      - choose:
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.bus_station_azrieli_center_line_249
+                below: 5
+            sequence:
+              - service: notify.mobile_app_your_phone
+                data:
+                  title: "Hurry!"
+                  message: "Bus arrives in {{ states('sensor.bus_station_azrieli_center_line_249') }} minutes!"
+                  data:
+                    priority: high
+          - conditions:
+              - condition: numeric_state
+                entity_id: sensor.bus_station_azrieli_center_line_249
+                above: 15
+            sequence:
+              - service: notify.mobile_app_your_phone
+                data:
+                  message: "You have {{ states('sensor.bus_station_azrieli_center_line_249') }} minutes. No rush!"
+```
+
 For more examples including train and light rail configurations, see [examples/configuration_examples.yaml](examples/configuration_examples.yaml).
+
+## Services
+
+The integration provides custom services for advanced automation scenarios:
+
+### `silent_bus.refresh_data`
+
+Force an immediate refresh of arrival times data. Useful when you want the latest information before making a decision.
+
+**Parameters:**
+- `entity_id` (optional): Specific entity to refresh. If not provided, all Silent Bus integrations will be refreshed.
+
+**Example:**
+```yaml
+service: silent_bus.refresh_data
+data:
+  entity_id: sensor.bus_station_azrieli_center_line_249
+```
+
+### `silent_bus.update_lines`
+
+Dynamically update the bus lines being tracked for a station. Perfect for adjusting monitored routes based on time of day or other conditions. Only works for bus and light rail sensors, not trains.
+
+**Parameters:**
+- `entity_id` (required): The Silent Bus entity to update
+- `lines` (required): Comma-separated list of bus line numbers
+
+**Example:**
+```yaml
+service: silent_bus.update_lines
+data:
+  entity_id: sensor.bus_station_azrieli_center_line_249
+  lines: "249, 40, 605"
+```
 
 ## Smart Features
 
@@ -311,12 +429,24 @@ This integration uses the [BusNearby API](https://app.busnearby.co.il), which pr
 
 ## Development
 
-### Running Tests
+### Setting Up Development Environment
 
 ```bash
+# Clone the repository
+git clone https://github.com/ziv-daniel/Silent-bus-integration.git
+cd Silent-bus-integration
+
 # Install development dependencies
 pip install -r requirements_test.txt
 
+# Install pre-commit hooks
+pip install pre-commit
+pre-commit install
+```
+
+### Running Tests
+
+```bash
 # Run all tests
 pytest
 
@@ -325,7 +455,30 @@ pytest --cov=custom_components.silent_bus --cov-report=html
 
 # Run specific test file
 pytest tests/unit/test_api.py
+
+# Run pre-commit checks manually
+pre-commit run --all-files
 ```
+
+### CI/CD Pipeline
+
+This integration uses GitHub Actions for automated testing and validation:
+
+- **Hassfest**: Validates integration structure and Home Assistant compatibility
+- **HACS Validation**: Ensures HACS repository standards compliance
+- **Tests**: Runs pytest across Python 3.12/3.13 and multiple HA versions
+- **Pre-commit**: Automated code formatting and linting with Ruff
+- **Release Drafter**: Automatically generates release notes from PRs
+- **Dependabot**: Keeps dependencies and actions up to date
+
+All workflows run automatically on push and pull requests.
+
+### Code Quality
+
+This project uses:
+- **Ruff** for fast Python linting and formatting
+- **pytest** with coverage reporting via Codecov
+- **Pre-commit hooks** for automated code quality checks
 
 ### Contributing
 
@@ -333,9 +486,13 @@ Contributions are welcome! Please:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Make your changes and ensure tests pass
+4. Run pre-commit checks: `pre-commit run --all-files`
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+All PRs are automatically validated by CI/CD workflows.
 
 ## License
 
