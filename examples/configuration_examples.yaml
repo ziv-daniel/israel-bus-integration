@@ -1,0 +1,179 @@
+# Silent Bus Integration - Configuration Examples
+# This file contains example configurations for different transportation types
+
+# ============================================
+# Example 1: Bus Station Configuration
+# ============================================
+# Track specific bus lines at a bus station
+# Station: Azrieli Center, Tel Aviv (Station ID: 24068)
+# Lines: 249, 40, 605
+
+# Configuration via UI:
+# 1. Go to Settings → Devices & Services → Add Integration
+# 2. Search for "Silent Bus"
+# 3. Select transport type: "Bus"
+# 4. Enter station ID: 24068
+# 5. Enter bus lines: 249, 40, 605
+
+# Expected sensors created:
+# - sensor.bus_station_azrieli_center_line_249
+# - sensor.bus_station_azrieli_center_line_40
+# - sensor.bus_station_azrieli_center_line_605
+
+# Each sensor will show:
+# - State: Minutes until next arrival (e.g., "5 min")
+# - Attributes:
+#   - line_number: Bus line number
+#   - station_id: Station identifier
+#   - station_name: Human-readable station name
+#   - next_arrival: ISO timestamp of next bus
+#   - real_time: Whether data is real-time or scheduled
+#   - direction: Bus destination/direction
+#   - upcoming_arrivals: List of next several arrivals
+
+
+# ============================================
+# Example 2: Light Rail (Kala) Configuration
+# ============================================
+# Track light rail lines at a station
+# Station: Central Station Jerusalem (Station ID: 20719)
+# Lines: 1, 3
+
+# Configuration via UI:
+# 1. Go to Settings → Devices & Services → Add Integration
+# 2. Search for "Silent Bus"
+# 3. Select transport type: "Light Rail"
+# 4. Enter station ID: 20719
+# 5. Enter line numbers: 1, 3
+
+# Expected sensors created:
+# - sensor.light_rail_station_central_station_line_1
+# - sensor.light_rail_station_central_station_line_3
+
+# Each sensor will show:
+# - State: Minutes until next light rail arrival
+# - Icon: mdi:tram (tram icon)
+# - Attributes: Similar to bus configuration
+
+
+# ============================================
+# Example 3: Train Route Configuration
+# ============================================
+# Track train routes between two stations
+# Route: Tel Aviv Center (3600) → Haifa Center (2800)
+
+# Configuration via UI:
+# 1. Go to Settings → Devices & Services → Add Integration
+# 2. Search for "Silent Bus"
+# 3. Select transport type: "Train"
+# 4. Enter origin station: 3600
+# 5. Enter destination station: 2800
+
+# Expected sensor created:
+# - sensor.train_route_tel_aviv_center_haifa_center_next_train
+
+# Sensor will show:
+# - State: Minutes until next train departure
+# - Icon: mdi:train (train icon)
+# - Attributes:
+#   - from_station: Origin station ID (3600)
+#   - to_station: Destination station ID (2800)
+#   - from_station_name: Origin station name
+#   - to_station_name: Destination station name
+#   - next_arrival: ISO timestamp of next departure
+#   - duration_minutes: Journey duration in minutes
+#   - real_time: Whether data is real-time
+#   - direction: Route description
+#   - upcoming_arrivals: List of next several departures
+
+
+# ============================================
+# Common Train Station IDs (Israel Railways)
+# ============================================
+# Tel Aviv - Savidor Center: 3600
+# Tel Aviv - HaShalom: 3700
+# Tel Aviv - HaHagana: 3500
+# Jerusalem - Yitzhak Navon: 680
+# Haifa Center - HaShmona: 2800
+# Beer Sheva Center: 5800
+# Netanya: 2200
+# Herzliya: 2820
+# Ben Gurion Airport: 8600
+# Rehovot: 5000
+
+# Note: Station IDs can be found at:
+# - Buses/Light Rail: https://www.bus.co.il
+# - Trains: https://www.rail.co.il
+
+
+# ============================================
+# Automation Examples
+# ============================================
+
+# Notify when bus is approaching (5 minutes)
+automation:
+  - alias: "Bus 249 Approaching Notification"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.bus_station_azrieli_center_line_249
+        below: 6
+        above: 0
+    condition:
+      - condition: template
+        value_template: "{{ not is_state('sensor.bus_station_azrieli_center_line_249', 'No data') }}"
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Bus 249 Approaching"
+          message: "Your bus will arrive in {{ states('sensor.bus_station_azrieli_center_line_249') }} minutes"
+
+# Notify when train is departing soon (10 minutes)
+  - alias: "Train to Haifa Departing Soon"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.train_route_tel_aviv_center_haifa_center_next_train
+        below: 11
+        above: 0
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "Train to Haifa Departing Soon"
+          message: "Next train departs in {{ states('sensor.train_route_tel_aviv_center_haifa_center_next_train') }} minutes"
+
+
+# ============================================
+# Lovelace Dashboard Examples
+# ============================================
+
+# Simple entity card
+type: entities
+entities:
+  - entity: sensor.bus_station_azrieli_center_line_249
+  - entity: sensor.bus_station_azrieli_center_line_40
+  - entity: sensor.train_route_tel_aviv_center_haifa_center_next_train
+
+# Detailed card with attributes
+type: glance
+entities:
+  - entity: sensor.bus_station_azrieli_center_line_249
+    name: Bus 249
+  - entity: sensor.bus_station_azrieli_center_line_40
+    name: Bus 40
+  - entity: sensor.light_rail_station_central_station_line_1
+    name: Light Rail 1
+  - entity: sensor.train_route_tel_aviv_center_haifa_center_next_train
+    name: Train to Haifa
+
+# Custom template card showing next arrivals
+type: markdown
+content: |
+  ## Public Transport Status
+
+  ### Bus 249 to Petach Tikva
+  **Next arrival:** {{ state_attr('sensor.bus_station_azrieli_center_line_249', 'next_arrival') | as_timestamp | timestamp_custom('%H:%M') }}
+  **Status:** {{ states('sensor.bus_station_azrieli_center_line_249') }} min
+
+  ### Train to Haifa
+  **Next departure:** {{ state_attr('sensor.train_route_tel_aviv_center_haifa_center_next_train', 'next_arrival') | as_timestamp | timestamp_custom('%H:%M') }}
+  **Duration:** {{ state_attr('sensor.train_route_tel_aviv_center_haifa_center_next_train', 'duration_minutes') }} min
+  **Status:** {{ states('sensor.train_route_tel_aviv_center_haifa_center_next_train') }} min

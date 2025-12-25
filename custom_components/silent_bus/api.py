@@ -269,3 +269,65 @@ class BusNearbyApiClient:
             return True
         except BusNearbyApiError:
             return False
+
+    async def get_train_routes(
+        self,
+        from_station: str,
+        to_station: str,
+        number_of_routes: int = 3,
+    ) -> list[dict[str, Any]]:
+        """Get train routes between two stations.
+
+        Args:
+            from_station: Origin station ID
+            to_station: Destination station ID
+            number_of_routes: Number of route options to return
+
+        Returns:
+            List of route dictionaries containing departure times and details
+
+        Raises:
+            ApiConnectionError: If connection fails
+            InvalidResponseError: If response format is invalid
+        """
+        _LOGGER.debug("Getting train routes from %s to %s", from_station, to_station)
+
+        # Format station IDs
+        if not from_station.startswith("1:"):
+            from_station = f"1:{from_station}"
+        if not to_station.startswith("1:"):
+            to_station = f"1:{to_station}"
+
+        # Use the plan endpoint for routes
+        url = f"{API_BASE_URL}/directions/index/plan"
+
+        params = {
+            "fromPlace": from_station,
+            "toPlace": to_station,
+            "numItineraries": number_of_routes,
+            "mode": "TRANSIT,WALK",
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "time": datetime.now().strftime("%H:%M:%S"),
+            "arriveBy": "false",
+        }
+
+        try:
+            data = await self._make_request(url, params)
+
+            if not isinstance(data, dict):
+                raise InvalidResponseError("Invalid response format: expected dict")
+
+            # Extract itineraries
+            plan = data.get("plan", {})
+            itineraries = plan.get("itineraries", [])
+
+            if not isinstance(itineraries, list):
+                raise InvalidResponseError("Invalid response format: 'itineraries' is not a list")
+
+            _LOGGER.debug("Retrieved %s train routes", len(itineraries))
+            return itineraries
+
+        except BusNearbyApiError:
+            raise
+        except Exception as err:
+            raise InvalidResponseError(f"Failed to parse train routes: {err}") from err

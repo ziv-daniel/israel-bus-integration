@@ -11,6 +11,30 @@ CONF_STATION_NAME: Final = "station_name"
 CONF_BUS_LINES: Final = "bus_lines"
 CONF_UPDATE_INTERVAL: Final = "update_interval"
 CONF_MAX_ARRIVALS: Final = "max_arrivals"
+CONF_TRANSPORT_TYPE: Final = "transport_type"
+CONF_FROM_STATION: Final = "from_station"
+CONF_TO_STATION: Final = "to_station"
+CONF_FROM_STATION_NAME: Final = "from_station_name"
+CONF_TO_STATION_NAME: Final = "to_station_name"
+
+# Transport types
+TRANSPORT_TYPE_BUS: Final = "bus"
+TRANSPORT_TYPE_TRAIN: Final = "train"
+TRANSPORT_TYPE_LIGHT_RAIL: Final = "light_rail"
+
+# Transport type labels
+TRANSPORT_TYPE_LABELS: Final = {
+    TRANSPORT_TYPE_BUS: "Bus",
+    TRANSPORT_TYPE_TRAIN: "Train",
+    TRANSPORT_TYPE_LIGHT_RAIL: "Light Rail",
+}
+
+# Transport type icons
+TRANSPORT_TYPE_ICONS: Final = {
+    TRANSPORT_TYPE_BUS: "mdi:bus",
+    TRANSPORT_TYPE_TRAIN: "mdi:train",
+    TRANSPORT_TYPE_LIGHT_RAIL: "mdi:tram",
+}
 
 # Default values
 DEFAULT_SCAN_INTERVAL: Final = timedelta(seconds=30)
