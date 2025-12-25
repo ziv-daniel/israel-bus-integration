@@ -171,7 +171,6 @@ async def test_coordinator_update_interval_adjustment(hass: HomeAssistant):
         update_interval=timedelta(seconds=30),
     )
 
-    initial_interval = coordinator.update_interval
     await coordinator.async_config_entry_first_refresh()
 
     # Update interval might change based on approaching bus

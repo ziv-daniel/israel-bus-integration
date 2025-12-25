@@ -3,10 +3,10 @@
   "name": "Silent Bus",
   "codeowners": ["@ziv-daniel"],
   "config_flow": true,
+  "dependencies": [],
   "documentation": "https://github.com/ziv-daniel/Silent-bus-integration",
+  "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/ziv-daniel/Silent-bus-integration/issues",
   "requirements": ["aiohttp>=3.9.0"],
-  "dependencies": [],
-  "version": "1.0.0",
-  "iot_class": "cloud_polling"
+  "version": "1.0.0"
 }

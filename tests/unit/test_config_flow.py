@@ -189,7 +189,7 @@ async def test_options_flow_update(hass: HomeAssistant):
         CONF_BUS_LINES: ["249", "40"],
     }
 
-    with patch.object(hass.config_entries, "async_update_entry") as mock_update:
+    with patch.object(hass.config_entries, "async_update_entry"):
         result = await hass.config_entries.options.async_init(entry.entry_id)
 
         result = await hass.config_entries.options.async_configure(

@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 from datetime import timedelta
 
-import aiohttp
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
@@ -215,7 +214,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unload_ok:
         # Clean up stored data
-        data = hass.data[DOMAIN].pop(entry.entry_id)
+        hass.data[DOMAIN].pop(entry.entry_id)
 
         # Close API client if it owns the session
         # Note: We're using the shared session from async_get_clientsession,

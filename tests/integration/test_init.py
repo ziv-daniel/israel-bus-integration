@@ -96,6 +96,6 @@ async def test_sensors_created(hass: HomeAssistant, mock_config_entry, mock_api_
 
     for line in bus_lines:
         entity_id = f"sensor.bus_{station_id}_line_{line}"
-        state = hass.states.get(entity_id)
+        hass.states.get(entity_id)
         # Sensor may not be registered yet, but the entity should exist
         # We're mainly checking that the integration loaded properly
