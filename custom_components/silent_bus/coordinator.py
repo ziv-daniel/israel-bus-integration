@@ -1,4 +1,5 @@
 """DataUpdateCoordinator for Silent Bus integration."""
+
 from __future__ import annotations
 
 import logging
@@ -167,7 +168,9 @@ class SilentBusCoordinator(DataUpdateCoordinator):
 
             # Calculate arrival time
             service_day = arrival.get("serviceDay", 0)
-            realtime_arrival = arrival.get("realtimeArrival", arrival.get("scheduledArrival", 0))
+            realtime_arrival = arrival.get(
+                "realtimeArrival", arrival.get("scheduledArrival", 0)
+            )
 
             # Convert to datetime
             arrival_timestamp = service_day + realtime_arrival
@@ -203,7 +206,9 @@ class SilentBusCoordinator(DataUpdateCoordinator):
 
         return processed
 
-    def _process_train_routes(self, itineraries: list[dict[str, Any]]) -> dict[str, Any]:
+    def _process_train_routes(
+        self, itineraries: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Process train route itineraries into structured format.
 
         Args:
@@ -237,7 +242,11 @@ class SilentBusCoordinator(DataUpdateCoordinator):
             # Extract route details (legs)
             legs = itinerary.get("legs", [])
             route_description = " → ".join(
-                [leg.get("to", {}).get("name", "Unknown") for leg in legs if leg.get("mode") == "RAIL"]
+                [
+                    leg.get("to", {}).get("name", "Unknown")
+                    for leg in legs
+                    if leg.get("mode") == "RAIL"
+                ]
             )
 
             # Create processed route entry

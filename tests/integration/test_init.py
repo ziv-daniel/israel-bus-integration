@@ -1,4 +1,5 @@
 """Integration tests for Silent Bus."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -10,13 +11,14 @@ from homeassistant.core import HomeAssistant
 from custom_components.silent_bus.const import (
     CONF_BUS_LINES,
     CONF_STATION_ID,
-    CONF_STATION_NAME,
     DOMAIN,
 )
 
 
 @pytest.mark.asyncio
-async def test_setup_and_unload(hass: HomeAssistant, mock_config_entry, mock_api_client):
+async def test_setup_and_unload(
+    hass: HomeAssistant, mock_config_entry, mock_api_client
+):
     """Test integration setup and unload."""
     mock_config_entry.add_to_hass(hass)
 

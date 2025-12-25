@@ -1,4 +1,5 @@
 """Config flow for Silent Bus integration."""
+
 from __future__ import annotations
 
 import logging
@@ -8,14 +9,12 @@ import aiohttp
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers import config_validation as cv
 
 from .api import (
     ApiConnectionError,
     BusNearbyApiClient,
-    StationNotFoundError,
 )
 from .const import (
     CONF_BUS_LINES,
@@ -87,8 +86,12 @@ class SilentBusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_TRANSPORT_TYPE, default=TRANSPORT_TYPE_BUS): vol.In(
                     {
                         TRANSPORT_TYPE_BUS: TRANSPORT_TYPE_LABELS[TRANSPORT_TYPE_BUS],
-                        TRANSPORT_TYPE_TRAIN: TRANSPORT_TYPE_LABELS[TRANSPORT_TYPE_TRAIN],
-                        TRANSPORT_TYPE_LIGHT_RAIL: TRANSPORT_TYPE_LABELS[TRANSPORT_TYPE_LIGHT_RAIL],
+                        TRANSPORT_TYPE_TRAIN: TRANSPORT_TYPE_LABELS[
+                            TRANSPORT_TYPE_TRAIN
+                        ],
+                        TRANSPORT_TYPE_LIGHT_RAIL: TRANSPORT_TYPE_LABELS[
+                            TRANSPORT_TYPE_LIGHT_RAIL
+                        ],
                     }
                 ),
             }
@@ -133,7 +136,9 @@ class SilentBusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         try:
                             stations = await api_client.search_station(station_id)
                             if stations:
-                                self._station_name = stations[0].get("name", f"Station {station_id}")
+                                self._station_name = stations[0].get(
+                                    "name", f"Station {station_id}"
+                                )
                             else:
                                 self._station_name = f"Station {station_id}"
                         except Exception:
@@ -200,9 +205,13 @@ class SilentBusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     else:
                         # Get station names
                         try:
-                            from_stations = await api_client.search_station(from_station)
+                            from_stations = await api_client.search_station(
+                                from_station
+                            )
                             if from_stations:
-                                self._from_station_name = from_stations[0].get("name", f"Station {from_station}")
+                                self._from_station_name = from_stations[0].get(
+                                    "name", f"Station {from_station}"
+                                )
                             else:
                                 self._from_station_name = f"Station {from_station}"
                         except Exception:
@@ -211,7 +220,9 @@ class SilentBusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         try:
                             to_stations = await api_client.search_station(to_station)
                             if to_stations:
-                                self._to_station_name = to_stations[0].get("name", f"Station {to_station}")
+                                self._to_station_name = to_stations[0].get(
+                                    "name", f"Station {to_station}"
+                                )
                             else:
                                 self._to_station_name = f"Station {to_station}"
                         except Exception:
@@ -279,9 +290,7 @@ class SilentBusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             # Parse bus lines (comma-separated)
             bus_lines = [
-                line.strip()
-                for line in bus_lines_input.split(",")
-                if line.strip()
+                line.strip() for line in bus_lines_input.split(",") if line.strip()
             ]
 
             if not bus_lines:
@@ -313,7 +322,11 @@ class SilentBusConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
         transport_label = TRANSPORT_TYPE_LABELS.get(self._transport_type, "Bus")
-        lines_example = "1, 3" if self._transport_type == TRANSPORT_TYPE_LIGHT_RAIL else "249, 40, 605"
+        lines_example = (
+            "1, 3"
+            if self._transport_type == TRANSPORT_TYPE_LIGHT_RAIL
+            else "249, 40, 605"
+        )
 
         return self.async_show_form(
             step_id="bus_lines",
@@ -369,9 +382,7 @@ class SilentBusOptionsFlow(config_entries.OptionsFlow):
             # Parse bus lines
             bus_lines_input = user_input[CONF_BUS_LINES].strip()
             bus_lines = [
-                line.strip()
-                for line in bus_lines_input.split(",")
-                if line.strip()
+                line.strip() for line in bus_lines_input.split(",") if line.strip()
             ]
 
             if not bus_lines:
@@ -432,6 +443,8 @@ class SilentBusOptionsFlow(config_entries.OptionsFlow):
             data_schema=data_schema,
             errors=errors,
             description_placeholders={
-                "station_name": self.config_entry.data.get(CONF_STATION_NAME, "Unknown"),
+                "station_name": self.config_entry.data.get(
+                    CONF_STATION_NAME, "Unknown"
+                ),
             },
         )

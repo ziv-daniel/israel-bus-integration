@@ -1,4 +1,5 @@
 """Sensor platform for Silent Bus integration."""
+
 from __future__ import annotations
 
 import logging
@@ -12,7 +13,6 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -275,7 +275,7 @@ class SilentBusTrainSensor(CoordinatorEntity, SensorEntity):
         }
 
         # Set entity name
-        self._attr_name = f"Next Train"
+        self._attr_name = "Next Train"
 
     @property
     def native_value(self) -> str | None:

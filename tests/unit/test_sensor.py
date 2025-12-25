@@ -1,4 +1,5 @@
 """Tests for the Silent Bus sensor platform."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta

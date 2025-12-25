@@ -1,4 +1,5 @@
 """Tests for the Silent Bus config flow."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -8,7 +9,7 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
-from custom_components.silent_bus.api import ApiConnectionError, StationNotFoundError
+from custom_components.silent_bus.api import ApiConnectionError
 from custom_components.silent_bus.const import (
     CONF_BUS_LINES,
     CONF_STATION_ID,
