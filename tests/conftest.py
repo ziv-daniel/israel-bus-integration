@@ -64,6 +64,7 @@ def mock_config_entry():
     """Mock config entry."""
     return MagicMock(
         entry_id="test_entry",
+        domain=DOMAIN,
         data={
             CONF_STATION_ID: "24068",
             CONF_STATION_NAME: "Arlozorov Terminal",
