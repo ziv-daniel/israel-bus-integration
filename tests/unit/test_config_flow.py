@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant import config_entries
@@ -29,12 +29,15 @@ async def test_user_form_display(hass: HomeAssistant):
 
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "user"
-    assert result["errors"] == {}
+    # First step shows transport type selection, no errors expected
+    assert result.get("errors") is None or result.get("errors") == {}
 
 
 @pytest.mark.asyncio
 async def test_user_form_station_not_found(hass: HomeAssistant):
     """Test station not found error."""
+    from custom_components.silent_bus.const import CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS
+
     with patch(
         "custom_components.silent_bus.config_flow.BusNearbyApiClient"
     ) as mock_client:
@@ -44,6 +47,13 @@ async def test_user_form_station_not_found(hass: HomeAssistant):
             DOMAIN, context={"source": config_entries.SOURCE_USER}
         )
 
+        # First configure transport type
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_TRANSPORT_TYPE: TRANSPORT_TYPE_BUS},
+        )
+
+        # Then configure station (should fail validation)
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_STATION_ID: "99999"},
@@ -56,6 +66,8 @@ async def test_user_form_station_not_found(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_user_form_cannot_connect(hass: HomeAssistant):
     """Test connection error."""
+    from custom_components.silent_bus.const import CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS
+
     with patch(
         "custom_components.silent_bus.config_flow.BusNearbyApiClient"
     ) as mock_client:
@@ -67,6 +79,13 @@ async def test_user_form_cannot_connect(hass: HomeAssistant):
             DOMAIN, context={"source": config_entries.SOURCE_USER}
         )
 
+        # First configure transport type
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_TRANSPORT_TYPE: TRANSPORT_TYPE_BUS},
+        )
+
+        # Then configure station (should fail with connection error)
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_STATION_ID: "24068"},
@@ -79,6 +98,8 @@ async def test_user_form_cannot_connect(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_user_form_success(hass: HomeAssistant):
     """Test successful station validation."""
+    from custom_components.silent_bus.const import CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS
+
     with patch(
         "custom_components.silent_bus.config_flow.BusNearbyApiClient"
     ) as mock_client:
@@ -91,6 +112,13 @@ async def test_user_form_success(hass: HomeAssistant):
             DOMAIN, context={"source": config_entries.SOURCE_USER}
         )
 
+        # First configure transport type
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_TRANSPORT_TYPE: TRANSPORT_TYPE_BUS},
+        )
+
+        # Then configure station (should succeed)
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_STATION_ID: "24068"},
@@ -103,6 +131,8 @@ async def test_user_form_success(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_bus_lines_form_no_lines(hass: HomeAssistant):
     """Test bus lines form with no lines entered."""
+    from custom_components.silent_bus.const import CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS
+
     with patch(
         "custom_components.silent_bus.config_flow.BusNearbyApiClient"
     ) as mock_client:
@@ -115,11 +145,19 @@ async def test_bus_lines_form_no_lines(hass: HomeAssistant):
             DOMAIN, context={"source": config_entries.SOURCE_USER}
         )
 
+        # First configure transport type
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_TRANSPORT_TYPE: TRANSPORT_TYPE_BUS},
+        )
+
+        # Then configure station
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_STATION_ID: "24068"},
         )
 
+        # Then configure bus lines (empty - should fail)
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_BUS_LINES: ""},
@@ -132,6 +170,8 @@ async def test_bus_lines_form_no_lines(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_full_flow_success(hass: HomeAssistant):
     """Test complete successful flow."""
+    from custom_components.silent_bus.const import CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS
+
     with patch(
         "custom_components.silent_bus.config_flow.BusNearbyApiClient"
     ) as mock_client:
@@ -144,11 +184,19 @@ async def test_full_flow_success(hass: HomeAssistant):
             DOMAIN, context={"source": config_entries.SOURCE_USER}
         )
 
+        # First configure transport type
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            {CONF_TRANSPORT_TYPE: TRANSPORT_TYPE_BUS},
+        )
+
+        # Then configure station
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_STATION_ID: "24068"},
         )
 
+        # Then configure bus lines
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {CONF_BUS_LINES: "249, 40, 605"},
@@ -163,13 +211,16 @@ async def test_full_flow_success(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_options_flow(hass: HomeAssistant):
     """Test options flow."""
-    entry = MagicMock()
-    entry.entry_id = "test"
-    entry.data = {
-        CONF_STATION_ID: "24068",
-        CONF_STATION_NAME: "Test Station",
-        CONF_BUS_LINES: ["249", "40"],
-    }
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_STATION_ID: "24068",
+            CONF_STATION_NAME: "Test Station",
+            CONF_BUS_LINES: ["249", "40"],
+        },
+    )
 
     entry.add_to_hass(hass)
 
@@ -182,13 +233,18 @@ async def test_options_flow(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_options_flow_update(hass: HomeAssistant):
     """Test options flow with updates."""
-    entry = MagicMock()
-    entry.entry_id = "test"
-    entry.data = {
-        CONF_STATION_ID: "24068",
-        CONF_STATION_NAME: "Test Station",
-        CONF_BUS_LINES: ["249", "40"],
-    }
+    from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={
+            CONF_STATION_ID: "24068",
+            CONF_STATION_NAME: "Test Station",
+            CONF_BUS_LINES: ["249", "40"],
+        },
+    )
+
+    entry.add_to_hass(hass)
 
     with patch.object(hass.config_entries, "async_update_entry"):
         result = await hass.config_entries.options.async_init(entry.entry_id)
