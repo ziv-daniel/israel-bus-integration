@@ -144,39 +144,37 @@ automation:
 # ============================================
 # Lovelace Dashboard Examples
 # ============================================
+# The following are Lovelace card examples. Copy these into your dashboard YAML.
 
-# Simple entity card
----
-type: entities
-entities:
-  - entity: sensor.bus_station_azrieli_center_line_249
-  - entity: sensor.bus_station_azrieli_center_line_40
-  - entity: sensor.train_route_tel_aviv_center_haifa_center_next_train
-
-# Detailed card with attributes
----
-type: glance
-entities:
-  - entity: sensor.bus_station_azrieli_center_line_249
-    name: Bus 249
-  - entity: sensor.bus_station_azrieli_center_line_40
-    name: Bus 40
-  - entity: sensor.light_rail_station_central_station_line_1
-    name: Light Rail 1
-  - entity: sensor.train_route_tel_aviv_center_haifa_center_next_train
-    name: Train to Haifa
-
-# Custom template card showing next arrivals
----
-type: markdown
-content: |
-  ## Public Transport Status
-
-  ### Bus 249 to Petach Tikva
-  **Next arrival:** {{ state_attr('sensor.bus_station_azrieli_center_line_249', 'next_arrival') | as_timestamp | timestamp_custom('%H:%M') }}
-  **Status:** {{ states('sensor.bus_station_azrieli_center_line_249') }} min
-
-  ### Train to Haifa
-  **Next departure:** {{ state_attr('sensor.train_route_tel_aviv_center_haifa_center_next_train', 'next_arrival') | as_timestamp | timestamp_custom('%H:%M') }}
-  **Duration:** {{ state_attr('sensor.train_route_tel_aviv_center_haifa_center_next_train', 'duration_minutes') }} min
-  **Status:** {{ states('sensor.train_route_tel_aviv_center_haifa_center_next_train') }} min
+# # Simple entity card
+# type: entities
+# entities:
+#   - entity: sensor.bus_station_azrieli_center_line_249
+#   - entity: sensor.bus_station_azrieli_center_line_40
+#   - entity: sensor.train_route_tel_aviv_center_haifa_center_next_train
+#
+# # Detailed card with attributes
+# type: glance
+# entities:
+#   - entity: sensor.bus_station_azrieli_center_line_249
+#     name: Bus 249
+#   - entity: sensor.bus_station_azrieli_center_line_40
+#     name: Bus 40
+#   - entity: sensor.light_rail_station_central_station_line_1
+#     name: Light Rail 1
+#   - entity: sensor.train_route_tel_aviv_center_haifa_center_next_train
+#     name: Train to Haifa
+#
+# # Custom template card showing next arrivals
+# type: markdown
+# content: |
+#   ## Public Transport Status
+#
+#   ### Bus 249 to Petach Tikva
+#   **Next arrival:** {{ state_attr('sensor.bus_station_azrieli_center_line_249', 'next_arrival') | as_timestamp | timestamp_custom('%H:%M') }}
+#   **Status:** {{ states('sensor.bus_station_azrieli_center_line_249') }} min
+#
+#   ### Train to Haifa
+#   **Next departure:** {{ state_attr('sensor.train_route_tel_aviv_center_haifa_center_next_train', 'next_arrival') | as_timestamp | timestamp_custom('%H:%M') }}
+#   **Duration:** {{ state_attr('sensor.train_route_tel_aviv_center_haifa_center_next_train', 'duration_minutes') }} min
+#   **Status:** {{ states('sensor.train_route_tel_aviv_center_haifa_center_next_train') }} min
