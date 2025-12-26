@@ -36,7 +36,10 @@ async def test_user_form_display(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_user_form_station_not_found(hass: HomeAssistant):
     """Test station not found error."""
-    from custom_components.silent_bus.const import CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS
+    from custom_components.silent_bus.const import (
+        CONF_TRANSPORT_TYPE,
+        TRANSPORT_TYPE_BUS,
+    )
 
     with patch(
         "custom_components.silent_bus.config_flow.BusNearbyApiClient"
@@ -66,7 +69,10 @@ async def test_user_form_station_not_found(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_user_form_cannot_connect(hass: HomeAssistant):
     """Test connection error."""
-    from custom_components.silent_bus.const import CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS
+    from custom_components.silent_bus.const import (
+        CONF_TRANSPORT_TYPE,
+        TRANSPORT_TYPE_BUS,
+    )
 
     with patch(
         "custom_components.silent_bus.config_flow.BusNearbyApiClient"
@@ -98,7 +104,10 @@ async def test_user_form_cannot_connect(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_user_form_success(hass: HomeAssistant):
     """Test successful station validation."""
-    from custom_components.silent_bus.const import CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS
+    from custom_components.silent_bus.const import (
+        CONF_TRANSPORT_TYPE,
+        TRANSPORT_TYPE_BUS,
+    )
 
     with patch(
         "custom_components.silent_bus.config_flow.BusNearbyApiClient"
@@ -131,7 +140,10 @@ async def test_user_form_success(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_bus_lines_form_no_lines(hass: HomeAssistant):
     """Test bus lines form with no lines entered."""
-    from custom_components.silent_bus.const import CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS
+    from custom_components.silent_bus.const import (
+        CONF_TRANSPORT_TYPE,
+        TRANSPORT_TYPE_BUS,
+    )
 
     with patch(
         "custom_components.silent_bus.config_flow.BusNearbyApiClient"
@@ -170,7 +182,10 @@ async def test_bus_lines_form_no_lines(hass: HomeAssistant):
 @pytest.mark.asyncio
 async def test_full_flow_success(hass: HomeAssistant):
     """Test complete successful flow."""
-    from custom_components.silent_bus.const import CONF_TRANSPORT_TYPE, TRANSPORT_TYPE_BUS
+    from custom_components.silent_bus.const import (
+        CONF_TRANSPORT_TYPE,
+        TRANSPORT_TYPE_BUS,
+    )
 
     with patch(
         "custom_components.silent_bus.config_flow.BusNearbyApiClient"
