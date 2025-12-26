@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -36,6 +37,9 @@ async def test_setup_and_unload(
     # Unload
     await hass.config_entries.async_unload(mock_config_entry.entry_id)
     await hass.async_block_till_done()
+
+    # Give background threads time to cleanup
+    await asyncio.sleep(0.1)
 
     assert mock_config_entry.state == ConfigEntryState.NOT_LOADED
     assert mock_config_entry.entry_id not in hass.data[DOMAIN]
