@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.13"]
         home-assistant: ["2025.12.4"]
     name: Python ${{ matrix.python-version }} / HA ${{ matrix.home-assistant }}
     steps:
