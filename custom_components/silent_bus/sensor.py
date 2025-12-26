@@ -1,4 +1,5 @@
 """Sensor platform for Silent Bus integration."""
+
 from __future__ import annotations
 
 import logging
@@ -12,7 +13,6 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -154,23 +154,18 @@ class SilentBusSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = f"Line {line_number}"
 
     @property
-    def native_value(self) -> str | None:
+    def native_value(self) -> int | None:
         """Return the state of the sensor.
 
         Returns:
-            Minutes until next arrival, or status string
+            Minutes until next arrival, or None if no data
         """
         next_arrival = self.coordinator.get_next_arrival(self._line_number)
 
         if next_arrival is None:
-            return "No data"
+            return None
 
-        minutes = next_arrival["minutes_until"]
-
-        if minutes == 0:
-            return "Arrived"
-
-        return str(minutes)
+        return next_arrival["minutes_until"]
 
     @property
     def native_unit_of_measurement(self) -> str:
@@ -179,8 +174,6 @@ class SilentBusSensor(CoordinatorEntity, SensorEntity):
         Returns:
             Unit string
         """
-        if self.native_value in ("No data", "Arrived"):
-            return None
         return "min"
 
     @property
@@ -275,26 +268,21 @@ class SilentBusTrainSensor(CoordinatorEntity, SensorEntity):
         }
 
         # Set entity name
-        self._attr_name = f"Next Train"
+        self._attr_name = "Next Train"
 
     @property
-    def native_value(self) -> str | None:
+    def native_value(self) -> int | None:
         """Return the state of the sensor.
 
         Returns:
-            Minutes until next departure, or status string
+            Minutes until next departure, or None if no data
         """
         next_departure = self.coordinator.get_next_arrival("train_route")
 
         if next_departure is None:
-            return "No data"
+            return None
 
-        minutes = next_departure["minutes_until"]
-
-        if minutes == 0:
-            return "Departing"
-
-        return str(minutes)
+        return next_departure["minutes_until"]
 
     @property
     def native_unit_of_measurement(self) -> str:
@@ -303,8 +291,6 @@ class SilentBusTrainSensor(CoordinatorEntity, SensorEntity):
         Returns:
             Unit string
         """
-        if self.native_value in ("No data", "Departing"):
-            return None
         return "min"
 
     @property

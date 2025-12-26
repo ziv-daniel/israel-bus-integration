@@ -1,10 +1,12 @@
 """Fixtures for Silent Bus tests."""
+
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.core import HomeAssistant
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.silent_bus.const import (
     CONF_BUS_LINES,
@@ -16,6 +18,14 @@ from custom_components.silent_bus.const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
 )
+
+pytest_plugins = "pytest_homeassistant_custom_component"
+
+
+@pytest.fixture(autouse=True)
+def auto_enable_custom_integrations(enable_custom_integrations):
+    """Enable custom integrations for all tests."""
+    return
 
 
 @pytest.fixture
@@ -62,8 +72,8 @@ def mock_api_client():
 @pytest.fixture
 def mock_config_entry():
     """Mock config entry."""
-    return MagicMock(
-        entry_id="test_entry",
+    return MockConfigEntry(
+        domain=DOMAIN,
         data={
             CONF_STATION_ID: "24068",
             CONF_STATION_NAME: "Arlozorov Terminal",
@@ -73,6 +83,21 @@ def mock_config_entry():
         },
         options={},
     )
+
+
+@pytest.fixture
+def simple_mock_config_entry(hass):
+    """Simple mock config entry for coordinator tests."""
+    from homeassistant.config_entries import ConfigEntryState
+
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+    )
+    entry.add_to_hass(hass)
+    # Set entry state to SETUP_IN_PROGRESS to allow async_config_entry_first_refresh()
+    entry._async_set_state(hass, ConfigEntryState.SETUP_IN_PROGRESS, "")
+    return entry
 
 
 @pytest.fixture

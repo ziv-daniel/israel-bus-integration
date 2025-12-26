@@ -1,8 +1,9 @@
 """Tests for the Silent Bus sensor platform."""
+
 from __future__ import annotations
 
-from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime
+from unittest.mock import MagicMock
 
 import pytest
 from homeassistant.core import HomeAssistant
@@ -41,7 +42,7 @@ async def test_sensor_state_with_arrival(hass: HomeAssistant):
         line_number="249",
     )
 
-    assert sensor.native_value == "5"
+    assert sensor.native_value == 5
     assert sensor.native_unit_of_measurement == "min"
     assert sensor.available is True
 
@@ -61,8 +62,8 @@ async def test_sensor_state_no_data(hass: HomeAssistant):
         line_number="249",
     )
 
-    assert sensor.native_value == "No data"
-    assert sensor.native_unit_of_measurement is None
+    assert sensor.native_value is None
+    assert sensor.native_unit_of_measurement == "min"
 
 
 @pytest.mark.asyncio
@@ -86,7 +87,7 @@ async def test_sensor_state_arrived(hass: HomeAssistant):
         line_number="249",
     )
 
-    assert sensor.native_value == "Arrived"
+    assert sensor.native_value == 0
 
 
 @pytest.mark.asyncio

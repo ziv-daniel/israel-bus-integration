@@ -1,6 +1,8 @@
 """Integration tests for Silent Bus."""
+
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -10,13 +12,14 @@ from homeassistant.core import HomeAssistant
 from custom_components.silent_bus.const import (
     CONF_BUS_LINES,
     CONF_STATION_ID,
-    CONF_STATION_NAME,
     DOMAIN,
 )
 
 
 @pytest.mark.asyncio
-async def test_setup_and_unload(hass: HomeAssistant, mock_config_entry, mock_api_client):
+async def test_setup_and_unload(
+    hass: HomeAssistant, mock_config_entry, mock_api_client
+):
     """Test integration setup and unload."""
     mock_config_entry.add_to_hass(hass)
 
@@ -37,6 +40,10 @@ async def test_setup_and_unload(hass: HomeAssistant, mock_config_entry, mock_api
 
     assert mock_config_entry.state == ConfigEntryState.NOT_LOADED
     assert mock_config_entry.entry_id not in hass.data[DOMAIN]
+
+    # Stop Home Assistant to cleanup all background threads
+    await hass.async_stop()
+    await asyncio.sleep(0.1)
 
 
 @pytest.mark.asyncio
@@ -96,6 +103,6 @@ async def test_sensors_created(hass: HomeAssistant, mock_config_entry, mock_api_
 
     for line in bus_lines:
         entity_id = f"sensor.bus_{station_id}_line_{line}"
-        state = hass.states.get(entity_id)
+        hass.states.get(entity_id)
         # Sensor may not be registered yet, but the entity should exist
         # We're mainly checking that the integration loaded properly

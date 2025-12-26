@@ -1,10 +1,10 @@
 """The Silent Bus integration."""
+
 from __future__ import annotations
 
 import logging
 from datetime import timedelta
 
-import aiohttp
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry
@@ -109,12 +109,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             coordinator = SilentBusCoordinator(
                 hass=hass,
                 api_client=api_client,
+                update_interval=update_interval,
+                config_entry=entry,
                 transport_type=transport_type,
                 from_station=from_station,
                 to_station=to_station,
                 from_station_name=from_station_name,
                 to_station_name=to_station_name,
-                update_interval=update_interval,
                 max_arrivals=max_arrivals,
             )
 
@@ -135,18 +136,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             coordinator = SilentBusCoordinator(
                 hass=hass,
                 api_client=api_client,
+                update_interval=update_interval,
+                config_entry=entry,
                 transport_type=transport_type,
                 station_id=station_id,
                 station_name=station_name,
                 bus_lines=bus_lines,
-                update_interval=update_interval,
                 max_arrivals=max_arrivals,
             )
 
     except ApiConnectionError as err:
-        raise ConfigEntryNotReady(
-            f"Failed to connect to BusNearby API: {err}"
-        ) from err
+        raise ConfigEntryNotReady(f"Failed to connect to BusNearby API: {err}") from err
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
@@ -215,7 +215,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unload_ok:
         # Clean up stored data
-        data = hass.data[DOMAIN].pop(entry.entry_id)
+        hass.data[DOMAIN].pop(entry.entry_id)
 
         # Close API client if it owns the session
         # Note: We're using the shared session from async_get_clientsession,

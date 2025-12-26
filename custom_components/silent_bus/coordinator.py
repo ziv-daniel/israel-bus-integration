@@ -1,4 +1,5 @@
 """DataUpdateCoordinator for Silent Bus integration."""
+
 from __future__ import annotations
 
 import logging
@@ -32,6 +33,7 @@ class SilentBusCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         api_client: BusNearbyApiClient,
         update_interval: timedelta,
+        config_entry=None,
         max_arrivals: int = DEFAULT_MAX_ARRIVALS,
         transport_type: str = TRANSPORT_TYPE_BUS,
         # Bus/Light Rail parameters
@@ -50,6 +52,7 @@ class SilentBusCoordinator(DataUpdateCoordinator):
             hass: Home Assistant instance
             api_client: BusNearby API client
             update_interval: How often to update data
+            config_entry: Config entry (optional, required for async_config_entry_first_refresh)
             max_arrivals: Maximum number of arrivals to track per line
             transport_type: Type of transport (bus, train, light_rail)
             station_id: Station ID to monitor (for bus/light rail)
@@ -87,6 +90,7 @@ class SilentBusCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name=coordinator_name,
             update_interval=update_interval,
+            config_entry=config_entry,
         )
 
     async def _async_update_data(self) -> dict[str, Any]:
@@ -167,7 +171,9 @@ class SilentBusCoordinator(DataUpdateCoordinator):
 
             # Calculate arrival time
             service_day = arrival.get("serviceDay", 0)
-            realtime_arrival = arrival.get("realtimeArrival", arrival.get("scheduledArrival", 0))
+            realtime_arrival = arrival.get(
+                "realtimeArrival", arrival.get("scheduledArrival", 0)
+            )
 
             # Convert to datetime
             arrival_timestamp = service_day + realtime_arrival
@@ -203,7 +209,9 @@ class SilentBusCoordinator(DataUpdateCoordinator):
 
         return processed
 
-    def _process_train_routes(self, itineraries: list[dict[str, Any]]) -> dict[str, Any]:
+    def _process_train_routes(
+        self, itineraries: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Process train route itineraries into structured format.
 
         Args:
@@ -237,7 +245,11 @@ class SilentBusCoordinator(DataUpdateCoordinator):
             # Extract route details (legs)
             legs = itinerary.get("legs", [])
             route_description = " → ".join(
-                [leg.get("to", {}).get("name", "Unknown") for leg in legs if leg.get("mode") == "RAIL"]
+                [
+                    leg.get("to", {}).get("name", "Unknown")
+                    for leg in legs
+                    if leg.get("mode") == "RAIL"
+                ]
             )
 
             # Create processed route entry
