@@ -39,7 +39,8 @@ async def test_setup_and_unload(
     await hass.async_block_till_done()
 
     # Give background threads time to cleanup
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0.5)
+    await hass.async_block_till_done()
 
     assert mock_config_entry.state == ConfigEntryState.NOT_LOADED
     assert mock_config_entry.entry_id not in hass.data[DOMAIN]
